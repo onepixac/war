@@ -5,67 +5,199 @@
 }
 
 html, body {
-  background-color: #0a0a0a !important;
+  background-color: #0b0d10 !important;
   min-height: 100vh;
   overflow: hidden;
+  color: #e1e4e8 !important;
 }
 
-/* Nav pills */
+/* Navbar */
+.war-navbar {
+  background: linear-gradient(180deg, #12151a 0%, #0b0d10 100%) !important;
+  border-bottom: 1px solid rgba(255,255,255,0.06) !important;
+}
+
+/* Nav pills override */
 .nav-pills .nav-link {
-  border-radius: 6px;
-  transition: all 0.15s;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 500;
+  letter-spacing: 0.3px;
+  padding: 6px 14px;
+  transition: all 0.15s ease;
+  color: #6c757d !important;
 }
 
-.nav-pills .nav-link:not(.active):hover {
-  color: #adb5bd !important;
-  background: rgba(255,255,255,0.05);
+.nav-pills .nav-link:hover {
+  color: #c9d1d9 !important;
+  background: rgba(255,255,255,0.05) !important;
 }
 
+.nav-pills .nav-link.active {
+  color: #fff !important;
+  background: #dc3545 !important;
+  box-shadow: 0 2px 8px rgba(220,53,69,0.3);
+}
+
+/* Cards */
 .card {
-  transition: border-color 0.2s;
+  border-radius: 10px !important;
+  transition: border-color 0.2s, transform 0.15s;
 }
 
 .card:hover {
-  border-color: #495057 !important;
+  border-color: rgba(255,255,255,0.12) !important;
+}
+
+/* Chat bubbles */
+.chat-bubble-user {
+  background: #dc3545 !important;
+  color: #fff !important;
+  border-radius: 16px 16px 4px 16px !important;
+}
+
+.chat-bubble-assistant {
+  background: #161b22 !important;
+  color: #e1e4e8 !important;
+  border-radius: 16px 16px 16px 4px !important;
+  border: 1px solid rgba(255,255,255,0.06) !important;
+}
+
+/* Form controls */
+.form-control.bg-dark {
+  background: #161b22 !important;
+  border-color: rgba(255,255,255,0.1) !important;
+  color: #e1e4e8 !important;
+  border-radius: 8px !important;
+}
+
+.form-control.bg-dark:focus {
+  border-color: #dc3545 !important;
+  box-shadow: 0 0 0 0.2rem rgba(220,53,69,0.15) !important;
+}
+
+.form-control.bg-dark::placeholder {
+  color: #484f58 !important;
+}
+
+.form-select.bg-dark {
+  background-color: #161b22 !important;
+  border-color: rgba(255,255,255,0.1) !important;
+  color: #e1e4e8 !important;
+  border-radius: 8px !important;
+}
+
+/* Buttons */
+.btn-danger {
+  background: #dc3545 !important;
+  border: none !important;
+  border-radius: 8px !important;
+}
+
+.btn-primary {
+  background: #dc3545 !important;
+  border: none !important;
+  border-radius: 8px !important;
+}
+
+.btn-primary:hover, .btn-danger:hover {
+  background: #c82333 !important;
+}
+
+.btn-outline-secondary {
+  border-color: rgba(255,255,255,0.1) !important;
+  color: #8b949e !important;
+  border-radius: 8px !important;
+  font-size: 0.8rem !important;
+}
+
+.btn-outline-secondary:hover {
+  background: rgba(255,255,255,0.05) !important;
+  border-color: rgba(255,255,255,0.15) !important;
+  color: #c9d1d9 !important;
+}
+
+/* Badges */
+.badge {
+  font-weight: 500;
+  letter-spacing: 0.3px;
 }
 
 /* Leaflet dark mode */
 .leaflet-popup-content-wrapper {
-  background: #1a1a2e;
-  color: #fff;
-  border-radius: 8px;
+  background: #161b22;
+  color: #e1e4e8;
+  border-radius: 10px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+  border: 1px solid rgba(255,255,255,0.06);
 }
 
 .leaflet-popup-tip {
-  background: #1a1a2e;
+  background: #161b22;
 }
 
 .leaflet-control-zoom a {
-  background: #1a1a2e !important;
-  color: #fff !important;
-  border-color: #333 !important;
+  background: #161b22 !important;
+  color: #e1e4e8 !important;
+  border-color: rgba(255,255,255,0.08) !important;
 }
 
 .leaflet-control-attribution {
-  background: rgba(0,0,0,0.5) !important;
-  color: #666 !important;
+  background: rgba(11,13,16,0.7) !important;
+  color: #484f58 !important;
   font-size: 10px !important;
 }
 
 .leaflet-control-attribution a {
-  color: #888 !important;
+  color: #6c757d !important;
+}
+
+/* MarkerCluster override for dark theme */
+.marker-cluster-small,
+.marker-cluster-medium,
+.marker-cluster-large {
+  background: transparent !important;
+}
+
+.marker-cluster-small div,
+.marker-cluster-medium div,
+.marker-cluster-large div {
+  background: transparent !important;
 }
 
 /* Scrollbar */
 ::-webkit-scrollbar {
-  width: 6px;
+  width: 5px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #0a0a0a;
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #333;
-  border-radius: 3px;
+  background: rgba(255,255,255,0.1);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255,255,255,0.2);
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.fade-in {
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
+}
+
+.pulse {
+  animation: pulse 1s infinite;
 }

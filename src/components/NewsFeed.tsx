@@ -45,13 +45,18 @@ export default function NewsFeed() {
   }, [region]);
 
   return (
-    <div>
-      <Row className="mb-3">
-        <Col>
+    <div style={{ maxWidth: 960, margin: "0 auto" }}>
+      <Row className="mb-3 align-items-center">
+        <Col xs="auto">
+          <h5 className="text-light fw-bold mb-0">News Feed</h5>
+        </Col>
+        <Col xs="auto" className="ms-auto">
           <Form.Select
             value={region}
             onChange={(e) => setRegion(e.target.value)}
-            className="bg-dark text-light border-secondary"
+            className="bg-dark"
+            size="sm"
+            style={{ width: "auto" }}
           >
             {REGIONS.map((r) => (
               <option key={r} value={r}>
@@ -64,41 +69,53 @@ export default function NewsFeed() {
 
       {loading ? (
         <div className="text-center py-5">
-          <Spinner animation="border" variant="light" />
+          <Spinner animation="border" variant="danger" />
         </div>
       ) : articles.length === 0 ? (
-        <p className="text-secondary text-center py-4">No articles found. Run the news pipeline to populate data.</p>
+        <Card bg="dark" className="border-secondary text-center py-5">
+          <Card.Body>
+            <p className="text-secondary mb-0">No articles found. Run the news pipeline to populate data.</p>
+          </Card.Body>
+        </Card>
       ) : (
         <div className="d-flex flex-column gap-2">
-          {articles.map((article) => (
-            <Card key={article.id} bg="dark" text="light" className="border-secondary">
+          {articles.map((article, i) => (
+            <Card key={article.id} bg="dark" text="light" className="border-secondary fade-in" style={{ animationDelay: `${i * 0.02}s` }}>
               <Card.Body className="py-2 px-3">
-                <div className="d-flex justify-content-between align-items-start">
-                  <div className="flex-grow-1">
+                <div className="d-flex justify-content-between align-items-start gap-3">
+                  <div className="flex-grow-1 min-w-0">
                     <a
                       href={article.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-light text-decoration-none fw-semibold"
+                      className="text-light text-decoration-none fw-semibold d-block text-truncate"
+                      style={{ fontSize: "0.9rem" }}
                     >
                       {article.title}
                     </a>
                     {article.summary && (
-                      <p className="text-secondary small mb-0 mt-1">{article.summary}</p>
+                      <p className="text-secondary small mb-0 mt-1" style={{
+                        display: "-webkit-box",
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: "vertical",
+                        overflow: "hidden"
+                      }}>
+                        {article.summary}
+                      </p>
                     )}
+                    <div className="mt-1 d-flex align-items-center gap-2">
+                      <small className="text-secondary">
+                        {article.published_at && new Date(article.published_at).toLocaleString()}
+                      </small>
+                      <small className="text-secondary">
+                        {article.region?.replace(/_/g, " ")}
+                      </small>
+                    </div>
                   </div>
-                  <div className="d-flex flex-column align-items-end gap-1 ms-3 flex-shrink-0">
-                    <Badge bg={CATEGORY_COLORS[article.source_category] || "secondary"}>
-                      {article.source_name || "Unknown"}
-                    </Badge>
-                    <small className="text-secondary">
-                      {article.region?.replace(/_/g, " ")}
-                    </small>
-                  </div>
+                  <Badge bg={CATEGORY_COLORS[article.source_category] || "secondary"} className="flex-shrink-0">
+                    {article.source_name || "Unknown"}
+                  </Badge>
                 </div>
-                <small className="text-secondary">
-                  {article.published_at && new Date(article.published_at).toLocaleString()}
-                </small>
               </Card.Body>
             </Card>
           ))}

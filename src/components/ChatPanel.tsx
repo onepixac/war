@@ -109,19 +109,21 @@ export default function ChatPanel() {
   };
 
   return (
-    <div className="d-flex flex-column" style={{ height: "100%" }}>
+    <div className="d-flex flex-column" style={{ height: "100%", maxWidth: 900, margin: "0 auto" }}>
       <div className="flex-grow-1 overflow-auto mb-3 pe-2" style={{ minHeight: 0 }}>
         {messages.length === 0 && !loading && (
-          <div className="text-secondary text-center py-5">
-            <p className="mb-3">Ask about global conflicts and security events</p>
-            <Row className="g-2 justify-content-center" style={{ maxWidth: 600, margin: "0 auto" }}>
+          <div className="text-center py-5 fade-in">
+            <div className="mb-4">
+              <h4 className="text-light fw-bold mb-1">Intelligence Chat</h4>
+              <p className="text-secondary small mb-4">Ask about global conflicts and security events. Powered by RAG.</p>
+            </div>
+            <Row className="g-2 justify-content-center" style={{ maxWidth: 640, margin: "0 auto" }}>
               {SUGGESTED_QUESTIONS.map((q) => (
                 <Col key={q} xs={6} md={4}>
                   <Button
                     variant="outline-secondary"
                     size="sm"
                     className="w-100 text-start"
-                    style={{ fontSize: "0.8rem" }}
                     onClick={() => sendMessage(q)}
                   >
                     {q}
@@ -133,12 +135,10 @@ export default function ChatPanel() {
         )}
 
         {messages.map((msg, i) => (
-          <div key={i} className={`mb-3 ${msg.role === "user" ? "text-end" : ""}`}>
+          <div key={i} className={`mb-3 ${msg.role === "user" ? "text-end" : ""} fade-in`}>
             <Card
-              bg={msg.role === "user" ? "primary" : "dark"}
-              text="light"
-              className={`d-inline-block border-0 ${msg.role === "user" ? "" : "border-secondary"}`}
-              style={{ maxWidth: "85%" }}
+              className={`d-inline-block border-0 ${msg.role === "user" ? "chat-bubble-user" : "chat-bubble-assistant"}`}
+              style={{ maxWidth: "80%" }}
             >
               <Card.Body className="py-2 px-3">
                 <div style={{ whiteSpace: "pre-wrap" }}>{msg.content}</div>
@@ -148,7 +148,7 @@ export default function ChatPanel() {
                     <div className="d-flex flex-wrap gap-1 mt-1">
                       {msg.sources.map((s, j) => (
                         <a key={j} href={s.url} target="_blank" rel="noopener noreferrer">
-                          <Badge bg="secondary">{s.source_name}</Badge>
+                          <Badge bg="secondary" className="fw-normal">{s.source_name}</Badge>
                         </a>
                       ))}
                     </div>
@@ -159,19 +159,18 @@ export default function ChatPanel() {
           </div>
         ))}
 
-        {/* Streaming message */}
         {loading && streamingContent && (
-          <div className="mb-3">
-            <Card bg="dark" text="light" className="d-inline-block border-0" style={{ maxWidth: "85%" }}>
+          <div className="mb-3 fade-in">
+            <Card className="d-inline-block border-0 chat-bubble-assistant" style={{ maxWidth: "80%" }}>
               <Card.Body className="py-2 px-3">
-                <div style={{ whiteSpace: "pre-wrap" }}>{streamingContent}<span className="opacity-50">▊</span></div>
+                <div style={{ whiteSpace: "pre-wrap" }}>{streamingContent}<span className="pulse">|</span></div>
                 {streamingSources && streamingSources.length > 0 && (
                   <div className="mt-2 pt-2 border-top border-secondary">
                     <small className="text-secondary">Sources:</small>
                     <div className="d-flex flex-wrap gap-1 mt-1">
                       {streamingSources.map((s, j) => (
                         <a key={j} href={s.url} target="_blank" rel="noopener noreferrer">
-                          <Badge bg="secondary">{s.source_name}</Badge>
+                          <Badge bg="secondary" className="fw-normal">{s.source_name}</Badge>
                         </a>
                       ))}
                     </div>
@@ -183,9 +182,9 @@ export default function ChatPanel() {
         )}
 
         {loading && !streamingContent && (
-          <div className="mb-3">
-            <Spinner animation="border" size="sm" variant="light" />
-            <small className="text-secondary ms-2">Searching sources...</small>
+          <div className="mb-3 fade-in">
+            <Spinner animation="border" size="sm" variant="danger" />
+            <small className="text-secondary ms-2">Searching intelligence sources...</small>
           </div>
         )}
         <div ref={messagesEndRef} />
@@ -196,10 +195,10 @@ export default function ChatPanel() {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="Ask about conflicts, events, or sources..."
-          className="bg-dark text-light border-secondary"
+          className="bg-dark"
           disabled={loading}
         />
-        <Button type="submit" variant="primary" disabled={loading || !input.trim()}>
+        <Button type="submit" variant="danger" disabled={loading || !input.trim()}>
           Send
         </Button>
       </Form>

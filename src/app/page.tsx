@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Nav } from "react-bootstrap";
+import { Nav, Container } from "react-bootstrap";
 import ConflictMap from "@/components/ConflictMap";
 import NewsFeed from "@/components/NewsFeed";
 import ChatPanel from "@/components/ChatPanel";
@@ -9,11 +9,11 @@ import BiasAnalyzer from "@/components/BiasAnalyzer";
 import FactChecker from "@/components/FactChecker";
 
 const TABS = [
-  { key: "map", label: "Map" },
-  { key: "news", label: "News" },
-  { key: "chat", label: "Chat" },
-  { key: "bias", label: "Bias" },
-  { key: "factcheck", label: "Fact Check" },
+  { key: "map", label: "Live Map", icon: "bi-globe-americas" },
+  { key: "news", label: "News Feed", icon: "bi-newspaper" },
+  { key: "chat", label: "Intel Chat", icon: "bi-chat-dots" },
+  { key: "bias", label: "Bias Analysis", icon: "bi-bar-chart-line" },
+  { key: "factcheck", label: "Fact Check", icon: "bi-shield-check" },
 ];
 
 export default function Home() {
@@ -22,9 +22,12 @@ export default function Home() {
   return (
     <div className="d-flex flex-column" style={{ height: "100vh", width: "100vw", overflow: "hidden" }}>
       {/* Top bar */}
-      <div className="d-flex align-items-center px-3 py-2 border-bottom border-secondary" style={{ background: "#0d0d0d", flexShrink: 0 }}>
-        <h5 className="mb-0 me-4 fw-bold">
-          <span className="text-danger">WAR</span>
+      <div className="war-navbar d-flex align-items-center px-3 py-2" style={{ flexShrink: 0 }}>
+        <h5 className="mb-0 me-auto fw-bold d-flex align-items-center gap-2">
+          <span className="text-danger" style={{ letterSpacing: "2px" }}>WAR</span>
+          <small className="text-secondary fw-normal" style={{ fontSize: "0.65rem", letterSpacing: "0.5px" }}>
+            GLOBAL CONFLICT MONITOR
+          </small>
         </h5>
         <Nav variant="pills" className="gap-1">
           {TABS.map((tab) => (
@@ -32,8 +35,7 @@ export default function Home() {
               <Nav.Link
                 active={activeTab === tab.key}
                 onClick={() => setActiveTab(tab.key)}
-                className={`py-1 px-3 ${activeTab === tab.key ? "bg-danger border-0" : "text-secondary"}`}
-                style={{ fontSize: "0.85rem", cursor: "pointer" }}
+                style={{ cursor: "pointer" }}
               >
                 {tab.label}
               </Nav.Link>
@@ -42,28 +44,28 @@ export default function Home() {
         </Nav>
       </div>
 
-      {/* Content area - fills remaining space */}
+      {/* Content area */}
       <div className="flex-grow-1" style={{ minHeight: 0 }}>
         {activeTab === "map" && <ConflictMap />}
         {activeTab === "news" && (
-          <div className="p-3 overflow-auto" style={{ height: "100%" }}>
+          <Container fluid className="p-3 overflow-auto" style={{ height: "100%" }}>
             <NewsFeed />
-          </div>
+          </Container>
         )}
         {activeTab === "chat" && (
-          <div className="p-3" style={{ height: "100%" }}>
+          <Container fluid className="p-3" style={{ height: "100%" }}>
             <ChatPanel />
-          </div>
+          </Container>
         )}
         {activeTab === "bias" && (
-          <div className="p-3 overflow-auto" style={{ height: "100%" }}>
+          <Container fluid className="p-3 overflow-auto" style={{ height: "100%" }}>
             <BiasAnalyzer />
-          </div>
+          </Container>
         )}
         {activeTab === "factcheck" && (
-          <div className="p-3 overflow-auto" style={{ height: "100%" }}>
+          <Container fluid className="p-3 overflow-auto" style={{ height: "100%" }}>
             <FactChecker />
-          </div>
+          </Container>
         )}
       </div>
     </div>

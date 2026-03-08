@@ -130,20 +130,23 @@ export default function ConflictMap() {
 
         const sevLabel = getSeverityLabel(attack.severity);
         const color = getSeverityColor(attack.severity);
-        const radius = sevLabel === "MAJOR" ? 14 : sevLabel === "CRITICAL" ? 11 : sevLabel === "HIGH" ? 9 : 7;
+        const size = sevLabel === "MAJOR" ? 18 : sevLabel === "CRITICAL" ? 15 : sevLabel === "HIGH" ? 13 : 10;
 
-        const marker = L.circleMarker([attack.lat, attack.lon], {
-          radius,
-          fillColor: color,
-          color: "#fff",
-          weight: 2,
-          opacity: 0.9,
-          fillOpacity: 0.8,
-        } as L.CircleMarkerOptions);
+        const icon = L.divIcon({
+          html: `<div style="
+            background:${color};
+            width:${size}px;height:${size}px;
+            border-radius:50%;
+            border:2px solid rgba(255,255,255,0.5);
+            box-shadow:0 1px 4px rgba(0,0,0,0.5);
+          "></div>`,
+          className: "",
+          iconSize: L.point(size, size),
+          iconAnchor: L.point(size / 2, size / 2),
+        });
 
-        // Store severity for cluster coloring
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (marker.options as any).customSeverity = sevLabel;
+        const marker = L.marker([attack.lat, attack.lon], { icon, customSeverity: sevLabel } as any);
 
         marker.bindPopup(`
           <div style="min-width:220px">
@@ -158,22 +161,6 @@ export default function ConflictMap() {
       });
 
       map.addLayer(clusterGroup!);
-
-      // Also add pulsing effect for CRITICAL/MAJOR events
-      attacks.forEach((attack) => {
-        if (!attack.lat || !attack.lon) return;
-        const sevLabel = getSeverityLabel(attack.severity);
-        if (sevLabel === "CRITICAL" || sevLabel === "MAJOR") {
-          L.circleMarker([attack.lat, attack.lon], {
-            radius: 20,
-            fillColor: getSeverityColor(attack.severity),
-            color: getSeverityColor(attack.severity),
-            weight: 1,
-            opacity: 0.3,
-            fillOpacity: 0.1,
-          }).addTo(map);
-        }
-      });
     });
 
     return () => {
