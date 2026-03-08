@@ -1,5 +1,5 @@
 import { chatCompletion, MODELS } from "@/lib/groq";
-import pool from "@/lib/db";
+import { query } from "@/lib/db";
 import { textToVector, vectorToSql } from "@/lib/embeddings";
 
 export interface Article {
@@ -28,9 +28,11 @@ export interface Attack {
   lon: number;
   description: string;
   classified_at: string;
+  title?: string;
+  summary?: string;
+  source_name?: string;
 }
 
-// Translate + summarize an article
 export async function translateAndSummarize(
   title: string,
   content: string,
@@ -48,30 +50,18 @@ export async function translateAndSummarize(
 
   try {
     const parsed = JSON.parse(result.choices[0]?.message?.content || "{}");
-    return {
-      translatedTitle: parsed.title || title,
-      summary: parsed.summary || "",
-    };
+    return { translatedTitle: parsed.title || title, summary: parsed.summary || "" };
   } catch {
     return { translatedTitle: title, summary: "" };
   }
 }
 
-// Classify if article describes a military/security attack
 export async function classifyAttack(
   title: string,
   summary: string
-): Promise<{
-  isAttack: boolean;
-  type?: string;
-  severity?: string;
-  location?: string;
-} | null> {
-  // Quick regex pre-filter
+): Promise<{ isAttack: boolean; type?: string; severity?: string; location?: string } | null> {
   const attackKeywords = /attack|strike|bomb|missile|shell|drone|kill|dead|casualt|explo|assault|raid|fire|shoot|clash/i;
-  if (!attackKeywords.test(title) && !attackKeywords.test(summary)) {
-    return null;
-  }
+  if (!attackKeywords.test(title) && !attackKeywords.test(summary)) return null;
 
   const result = await chatCompletion(MODELS.fast, [
     {
@@ -90,7 +80,6 @@ If not a military/security event, return {"isAttack": false}.`,
   }
 }
 
-// Geocode a location name using OpenStreetMap Nominatim (free, no key needed)
 export async function geocode(location: string): Promise<{ lat: number; lon: number } | null> {
   try {
     const res = await fetch(
@@ -98,16 +87,13 @@ export async function geocode(location: string): Promise<{ lat: number; lon: num
       { headers: { "User-Agent": "WarMonitor/1.0" } }
     );
     const data = await res.json();
-    if (data.length > 0) {
-      return { lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon) };
-    }
+    if (data.length > 0) return { lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon) };
   } catch (e) {
     console.error("Geocoding error:", e);
   }
   return null;
 }
 
-// Save article to DB with embedding
 export async function saveArticle(article: {
   source_id: number;
   title: string;
@@ -120,33 +106,25 @@ export async function saveArticle(article: {
   published_at?: string;
 }) {
   const embedding = textToVector(`${article.title} ${article.summary}`);
+  const embeddingStr = vectorToSql(embedding);
 
-  const result = await pool.query(
+  const rows = await query(
     `INSERT INTO articles (source_id, title, original_title, content, summary, url, language, region, published_at, embedding)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-     ON CONFLICT (url) DO UPDATE SET summary = $5, embedding = $10
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10::vector)
+     ON CONFLICT (url) DO UPDATE SET summary = $5, embedding = $10::vector
      RETURNING id`,
-    [
-      article.source_id,
-      article.title,
-      article.original_title || null,
-      article.content || null,
-      article.summary,
-      article.url,
-      article.language,
-      article.region,
-      article.published_at || new Date().toISOString(),
-      vectorToSql(embedding),
-    ]
+    [article.source_id, article.title, article.original_title || null, article.content || null,
+     article.summary, article.url, article.language, article.region,
+     article.published_at || new Date().toISOString(), embeddingStr]
   );
-  return result.rows[0].id;
+  return rows[0].id;
 }
 
-// Search articles by semantic similarity
-export async function searchArticles(query: string, limit: number = 10): Promise<Article[]> {
-  const queryVector = textToVector(query);
+export async function searchArticles(queryText: string, limit: number = 10): Promise<Article[]> {
+  const queryVector = textToVector(queryText);
+  const embeddingStr = vectorToSql(queryVector);
 
-  const result = await pool.query(
+  return await query(
     `SELECT a.*, s.name as source_name, s.category as source_category,
             1 - (a.embedding <=> $1::vector) as similarity
      FROM articles a
@@ -154,38 +132,36 @@ export async function searchArticles(query: string, limit: number = 10): Promise
      WHERE a.embedding IS NOT NULL
      ORDER BY a.embedding <=> $1::vector
      LIMIT $2`,
-    [vectorToSql(queryVector), limit]
-  );
-  return result.rows;
+    [embeddingStr, limit]
+  ) as Article[];
 }
 
-// Get recent articles
-export async function getRecentArticles(
-  limit: number = 50,
-  region?: string
-): Promise<Article[]> {
-  const query = region
-    ? `SELECT a.*, s.name as source_name, s.category as source_category
+export async function getRecentArticles(limit: number = 50, region?: string): Promise<Article[]> {
+  if (region) {
+    return await query(
+      `SELECT a.*, s.name as source_name, s.category as source_category
        FROM articles a LEFT JOIN sources s ON a.source_id = s.id
-       WHERE a.region = $1 ORDER BY a.fetched_at DESC LIMIT $2`
-    : `SELECT a.*, s.name as source_name, s.category as source_category
-       FROM articles a LEFT JOIN sources s ON a.source_id = s.id
-       ORDER BY a.fetched_at DESC LIMIT $1`;
-
-  const result = await pool.query(query, region ? [region, limit] : [limit]);
-  return result.rows;
+       WHERE a.region = $1 ORDER BY a.fetched_at DESC LIMIT $2`,
+      [region, limit]
+    ) as Article[];
+  }
+  return await query(
+    `SELECT a.*, s.name as source_name, s.category as source_category
+     FROM articles a LEFT JOIN sources s ON a.source_id = s.id
+     ORDER BY a.fetched_at DESC LIMIT $1`,
+    [limit]
+  ) as Article[];
 }
 
-// Get attacks for map
 export async function getAttacks(hours: number = 48): Promise<Attack[]> {
-  const result = await pool.query(
+  return await query(
     `SELECT at.*, a.title, a.summary, a.url, s.name as source_name
      FROM attacks at
      JOIN articles a ON at.article_id = a.id
      LEFT JOIN sources s ON a.source_id = s.id
-     WHERE at.classified_at > NOW() - INTERVAL '${hours} hours'
+     WHERE at.classified_at > NOW() - make_interval(hours => $1)
        AND at.lat IS NOT NULL AND at.lon IS NOT NULL
-     ORDER BY at.classified_at DESC`
-  );
-  return result.rows;
+     ORDER BY at.classified_at DESC`,
+    [hours]
+  ) as Attack[];
 }

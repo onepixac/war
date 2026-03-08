@@ -10,7 +10,6 @@ export async function chatWithNews(
   message: string,
   history: ChatMessage[] = []
 ): Promise<{ reply: string; sources: { title: string; url: string; source_name: string }[] }> {
-  // 1. Retrieve relevant articles
   const articles = await searchArticles(message, 8);
 
   const context = articles.length > 0
@@ -22,7 +21,6 @@ export async function chatWithNews(
         .join("\n\n")
     : "No relevant articles found in the database.";
 
-  // 2. Generate response with RAG context
   const messages = [
     {
       role: "system" as const,
