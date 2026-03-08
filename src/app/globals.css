@@ -42,13 +42,13 @@ html, body {
 /* Cards */
 .card {
   border-radius: 12px !important;
-  transition: border-color 0.2s, box-shadow 0.2s;
-  border: 1px solid rgba(255,255,255,0.06) !important;
+  transition: box-shadow 0.2s;
+  border: none !important;
+  background: #111318 !important;
 }
 
 .card:hover {
-  border-color: rgba(255,255,255,0.1) !important;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.3);
+  box-shadow: 0 2px 16px rgba(0,0,0,0.3);
 }
 
 /* Chat bubbles */
@@ -341,4 +341,75 @@ html, body {
 
 .empty-state p {
   margin-bottom: 0.25rem;
+}
+
+/* Chat markdown styling */
+.chat-markdown {
+  font-size: 0.88rem;
+  line-height: 1.7;
+  color: #c9d1d9;
+}
+
+.chat-markdown h1,
+.chat-markdown h2,
+.chat-markdown h3 {
+  color: #e1e4e8;
+  font-weight: 600;
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.chat-markdown h2 {
+  font-size: 1rem;
+  padding-bottom: 4px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+
+.chat-markdown h3 {
+  font-size: 0.92rem;
+}
+
+.chat-markdown p {
+  margin-bottom: 0.6rem;
+  color: #b0b8c1;
+}
+
+.chat-markdown ul,
+.chat-markdown ol {
+  padding-left: 1.2rem;
+  margin-bottom: 0.6rem;
+}
+
+.chat-markdown li {
+  margin-bottom: 0.3rem;
+  color: #b0b8c1;
+}
+
+.chat-markdown strong {
+  color: #e1e4e8;
+  font-weight: 600;
+}
+
+.chat-markdown code {
+  background: rgba(255,255,255,0.06);
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-size: 0.82rem;
+  color: #e57373;
+}
+
+.chat-markdown blockquote {
+  border-left: 3px solid rgba(229,115,115,0.3);
+  padding-left: 12px;
+  margin: 0.5rem 0;
+  color: #8b949e;
+}
+
+.chat-markdown a {
+  color: #80cbc4;
+  text-decoration: none;
+}
+
+.chat-markdown a:hover {
+  text-decoration: underline;
 }

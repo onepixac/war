@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
               messages: [
                 {
                   role: "system",
-                  content: `You are a geopolitical intelligence analyst. Rewrite the following intelligence briefing in a clear, well-structured format. Use bullet points, bold sections, and clear language. Keep the same information and citations but improve readability. Do NOT add new information.`,
+                  content: `You are a geopolitical intelligence analyst. Rewrite the following intelligence briefing in clean markdown format. Use ## for section headers, **bold** for emphasis, and - for bullet points. Keep it concise and structured. Keep the same information and citations but improve readability. Do NOT add new information. Do NOT use asterisks for bullet points, only dashes.`,
                 },
                 {
                   role: "user",

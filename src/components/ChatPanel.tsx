@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Form, Button, Spinner, Badge, Row, Col } from "react-bootstrap";
+import ReactMarkdown from "react-markdown";
 
 interface Message {
   role: "user" | "assistant";
@@ -116,9 +117,8 @@ export default function ChatPanel() {
   const renderSources = (sources: Message["sources"]) => {
     if (!sources || sources.length === 0) return null;
     return (
-      <div className="mt-2 pt-2" style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
-        <small style={{ color: "#484f58", fontSize: "0.7rem" }}>Sources:</small>
-        <div className="d-flex flex-wrap gap-1 mt-1">
+      <div className="mt-3 pt-2" style={{ borderTop: "1px solid rgba(255,255,255,0.04)" }}>
+        <div className="d-flex flex-wrap gap-1">
           {sources.map((s, j) => (
             <a key={j} href={s.url} target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none" }}>
               <Badge className="badge-pastel-teal" style={{ fontSize: "0.65rem", fontWeight: 400 }}>
@@ -131,9 +131,15 @@ export default function ChatPanel() {
     );
   };
 
+  const renderMarkdown = (content: string) => (
+    <div className="chat-markdown">
+      <ReactMarkdown>{content}</ReactMarkdown>
+    </div>
+  );
+
   return (
     <div className="d-flex flex-column" style={{ height: "100%", maxWidth: 800, margin: "0 auto" }}>
-      <div className="flex-grow-1 overflow-auto mb-3 pe-2" style={{ minHeight: 0 }}>
+      <div className="flex-grow-1 overflow-auto mb-3" style={{ minHeight: 0 }}>
         {messages.length === 0 && !loading && (
           <div className="fade-in" style={{ paddingTop: "15vh", textAlign: "center" }}>
             <h5 style={{ color: "#c9d1d9", fontWeight: 600, marginBottom: 4 }}>Intelligence Chat</h5>
@@ -159,23 +165,25 @@ export default function ChatPanel() {
         )}
 
         {messages.map((msg, i) => (
-          <div key={i} className={`mb-3 ${msg.role === "user" ? "text-end" : ""} fade-in`}>
-            <div
-              className={`d-inline-block ${msg.role === "user" ? "chat-bubble-user" : "chat-bubble-assistant"}`}
-              style={{ maxWidth: "80%", padding: "10px 14px" }}
-            >
-              <div style={{ whiteSpace: "pre-wrap", fontSize: "0.88rem", lineHeight: 1.6 }}>{msg.content}</div>
-              {renderSources(msg.sources)}
-            </div>
+          <div key={i} className={`mb-4 fade-in ${msg.role === "user" ? "text-end" : ""}`}>
+            {msg.role === "user" ? (
+              <div className="d-inline-block chat-bubble-user" style={{ maxWidth: "75%", padding: "10px 16px" }}>
+                <div style={{ fontSize: "0.88rem" }}>{msg.content}</div>
+              </div>
+            ) : (
+              <div style={{ maxWidth: "90%" }}>
+                {renderMarkdown(msg.content)}
+                {renderSources(msg.sources)}
+              </div>
+            )}
           </div>
         ))}
 
         {loading && streamingContent && (
-          <div className="mb-3 fade-in">
-            <div className="d-inline-block chat-bubble-assistant" style={{ maxWidth: "80%", padding: "10px 14px" }}>
-              <div style={{ whiteSpace: "pre-wrap", fontSize: "0.88rem", lineHeight: 1.6 }}>
-                {streamingContent}<span className="pulse" style={{ color: "#e57373" }}>|</span>
-              </div>
+          <div className="mb-4 fade-in">
+            <div style={{ maxWidth: "90%" }}>
+              {renderMarkdown(streamingContent)}
+              <span className="pulse" style={{ color: "#e57373" }}>|</span>
               {renderSources(streamingSources)}
             </div>
           </div>
