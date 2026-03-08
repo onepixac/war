@@ -141,14 +141,14 @@ export default function ChatPanel() {
     <div className="d-flex flex-column" style={{ height: "100%", maxWidth: 800, margin: "0 auto" }}>
       <div className="flex-grow-1 overflow-auto mb-3" style={{ minHeight: 0 }}>
         {messages.length === 0 && !loading && (
-          <div className="fade-in" style={{ paddingTop: "15vh", textAlign: "center" }}>
+          <div className="fade-in" style={{ paddingTop: "10vh", textAlign: "center", padding: "10vh 8px 0" }}>
             <h5 style={{ color: "#c9d1d9", fontWeight: 600, marginBottom: 4 }}>Intelligence Chat</h5>
-            <p style={{ color: "#484f58", fontSize: "0.8rem", marginBottom: "2rem" }}>
+            <p style={{ color: "#484f58", fontSize: "0.8rem", marginBottom: "1.5rem" }}>
               Ask about global conflicts. Powered by multi-agent RAG.
             </p>
             <Row className="g-2 justify-content-center" style={{ maxWidth: 560, margin: "0 auto" }}>
               {SUGGESTED_QUESTIONS.map((q) => (
-                <Col key={q} xs={6} md={4}>
+                <Col key={q} xs={12} sm={6} md={4}>
                   <Button
                     variant="outline-secondary"
                     size="sm"
@@ -167,11 +167,11 @@ export default function ChatPanel() {
         {messages.map((msg, i) => (
           <div key={i} className={`mb-4 fade-in ${msg.role === "user" ? "text-end" : ""}`}>
             {msg.role === "user" ? (
-              <div className="d-inline-block chat-bubble-user" style={{ maxWidth: "75%", padding: "10px 16px" }}>
+              <div className="d-inline-block chat-bubble-user" style={{ maxWidth: "85%", padding: "10px 16px" }}>
                 <div style={{ fontSize: "0.88rem" }}>{msg.content}</div>
               </div>
             ) : (
-              <div style={{ maxWidth: "90%" }}>
+              <div style={{ maxWidth: "100%" }}>
                 {renderMarkdown(msg.content)}
                 {renderSources(msg.sources)}
               </div>
@@ -181,7 +181,7 @@ export default function ChatPanel() {
 
         {loading && streamingContent && (
           <div className="mb-4 fade-in">
-            <div style={{ maxWidth: "90%" }}>
+            <div style={{ maxWidth: "100%" }}>
               {renderMarkdown(streamingContent)}
               <span className="pulse" style={{ color: "#e57373" }}>|</span>
               {renderSources(streamingSources)}
@@ -200,15 +200,16 @@ export default function ChatPanel() {
         <div ref={messagesEndRef} />
       </div>
 
-      <Form onSubmit={handleSubmit} className="d-flex gap-2">
+      <Form onSubmit={handleSubmit} className="d-flex gap-2" style={{ padding: "0 2px" }}>
         <Form.Control
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder="Ask about conflicts, events, or sources..."
+          placeholder="Ask about conflicts..."
           className="bg-dark"
           disabled={loading}
+          style={{ minWidth: 0 }}
         />
-        <Button type="submit" variant="danger" disabled={loading || !input.trim()} style={{ padding: "6px 20px" }}>
+        <Button type="submit" variant="danger" disabled={loading || !input.trim()} style={{ padding: "6px 16px", flexShrink: 0 }}>
           Send
         </Button>
       </Form>

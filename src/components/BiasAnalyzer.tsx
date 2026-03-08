@@ -78,17 +78,19 @@ export default function BiasAnalyzer() {
     <div style={{ maxWidth: 900, margin: "0 auto" }}>
       <h6 className="section-header mb-3">Bias Analysis</h6>
 
-      <Form onSubmit={analyze} className="d-flex gap-2 mb-4">
-        <Form.Control
-          value={topic}
-          onChange={(e) => setTopic(e.target.value)}
-          placeholder="Enter an event or topic to analyze bias (e.g., 'Iran drone attack')"
-          className="bg-dark"
-          disabled={loading}
-        />
-        <Button type="submit" variant="warning" disabled={loading || !topic.trim()} style={{ padding: "6px 24px" }}>
-          {loading ? <Spinner animation="border" size="sm" /> : "Analyze"}
-        </Button>
+      <Form onSubmit={analyze} className="mb-4">
+        <div className="d-flex flex-column flex-sm-row gap-2">
+          <Form.Control
+            value={topic}
+            onChange={(e) => setTopic(e.target.value)}
+            placeholder="Topic to analyze (e.g., 'Iran drone attack')"
+            className="bg-dark"
+            disabled={loading}
+          />
+          <Button type="submit" variant="warning" disabled={loading || !topic.trim()} style={{ padding: "6px 24px", flexShrink: 0 }}>
+            {loading ? <Spinner animation="border" size="sm" /> : "Analyze"}
+          </Button>
+        </div>
       </Form>
 
       {results.length === 0 && !loading && (

@@ -64,17 +64,19 @@ export default function FactChecker() {
     <div style={{ maxWidth: 900, margin: "0 auto" }}>
       <h6 className="section-header mb-3">Fact Checker</h6>
 
-      <Form onSubmit={check} className="d-flex gap-2 mb-4">
-        <Form.Control
-          value={claim}
-          onChange={(e) => setClaim(e.target.value)}
-          placeholder='Enter a claim to verify (e.g., "Russia struck a hospital in Kharkiv")'
-          className="bg-dark"
-          disabled={loading}
-        />
-        <Button type="submit" variant="info" disabled={loading || !claim.trim()} style={{ padding: "6px 24px" }}>
-          {loading ? <Spinner animation="border" size="sm" /> : "Verify"}
-        </Button>
+      <Form onSubmit={check} className="mb-4">
+        <div className="d-flex flex-column flex-sm-row gap-2">
+          <Form.Control
+            value={claim}
+            onChange={(e) => setClaim(e.target.value)}
+            placeholder='Claim to verify (e.g., "Russia struck a hospital")'
+            className="bg-dark"
+            disabled={loading}
+          />
+          <Button type="submit" variant="info" disabled={loading || !claim.trim()} style={{ padding: "6px 24px", flexShrink: 0 }}>
+            {loading ? <Spinner animation="border" size="sm" /> : "Verify"}
+          </Button>
+        </div>
       </Form>
 
       {results.length === 0 && !loading && (

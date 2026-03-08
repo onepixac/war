@@ -266,20 +266,23 @@ export default function ConflictMap() {
       <div ref={mapRef} style={{ width: "100%", height: "100%" }} />
 
       <div
+        className="map-filter-panel"
         style={{
           position: "absolute",
-          top: 12,
-          left: 12,
+          top: 52,
+          left: 8,
+          right: 8,
           zIndex: 1000,
           background: "rgba(13,13,13,0.9)",
           borderRadius: 10,
-          padding: "10px 14px",
+          padding: "8px 10px",
           backdropFilter: "blur(10px)",
           border: "1px solid rgba(255,255,255,0.06)",
+          maxWidth: 480,
         }}
       >
-        <div className="d-flex align-items-center gap-2">
-          <small className="text-light fw-bold me-1">{filteredCount} events</small>
+        <div className="d-flex align-items-center gap-1 flex-wrap">
+          <small className="text-light fw-bold me-1" style={{ fontSize: "0.72rem" }}>{filteredCount}</small>
           {Object.entries(SEVERITY_COLORS).map(([level, color]) => {
             const isActive = activeFilters.has(level);
             const count = severityCounts[level] || 0;
@@ -292,11 +295,15 @@ export default function ConflictMap() {
                   backgroundColor: isActive ? color : "transparent",
                   border: `2px solid ${color}`,
                   color: isActive ? (level === "MEDIUM" ? "#000" : "#fff") : color,
-                  fontSize: "0.7rem",
+                  fontSize: "0.65rem",
                   cursor: "pointer",
                   opacity: isActive ? 1 : 0.5,
                   transition: "all 0.2s ease",
                   userSelect: "none",
+                  padding: "4px 8px",
+                  minHeight: 26,
+                  display: "inline-flex",
+                  alignItems: "center",
                 }}
               >
                 {level} {count > 0 && `(${count})`}

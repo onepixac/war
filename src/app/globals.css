@@ -413,3 +413,67 @@ html, body {
 .chat-markdown a:hover {
   text-decoration: underline;
 }
+
+/* ===== Mobile responsive ===== */
+
+/* Hide nav scrollbar */
+.nav-mobile-scroll::-webkit-scrollbar {
+  display: none;
+}
+.nav-mobile-scroll {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+@media (max-width: 576px) {
+  /* Smaller nav pills on mobile */
+  .nav-pills .nav-link {
+    font-size: 0.72rem;
+    padding: 5px 10px;
+  }
+
+  /* Section headers */
+  .section-header {
+    font-size: 0.9rem;
+  }
+
+  /* Chat markdown smaller on mobile */
+  .chat-markdown {
+    font-size: 0.82rem;
+  }
+
+  /* Cards less padding */
+  .news-card {
+    padding: 10px !important;
+  }
+
+  /* Map filter panel full width under header */
+  .map-filter-panel {
+    left: 4px !important;
+    right: 4px !important;
+    top: 48px !important;
+    padding: 6px 8px !important;
+  }
+
+  /* Leaflet popup smaller */
+  .leaflet-popup-content-wrapper {
+    font-size: 0.8rem;
+  }
+
+  .leaflet-popup-content {
+    margin: 8px 10px !important;
+  }
+
+  /* Empty state */
+  .empty-state {
+    padding: 2rem 0.5rem;
+  }
+}
+
+@media (max-width: 768px) {
+  /* Bias/FactCheck source cards full width */
+  .card .col-md-6 {
+    flex: 0 0 100%;
+    max-width: 100%;
+  }
+}
