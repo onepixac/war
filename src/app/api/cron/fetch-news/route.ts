@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/db";
-import { translateAndSummarize, classifyAttack, geocode, saveArticle } from "@/lib/services/news";
+import { chatCompletion, MODELS } from "@/lib/groq";
+import { getEmbedding, vectorToSql } from "@/lib/embeddings";
 
-export const maxDuration = 60; // Vercel function timeout: 60 seconds
+export const maxDuration = 60;
 
 export async function GET(request: NextRequest) {
   const authHeader = request.headers.get("authorization");
@@ -12,7 +13,6 @@ export async function GET(request: NextRequest) {
 
   try {
     const sources = await query("SELECT * FROM sources WHERE active = true ORDER BY region");
-
     if (sources.length === 0) {
       return NextResponse.json({ message: "No active sources configured" });
     }
@@ -25,55 +25,98 @@ export async function GET(request: NextRequest) {
       try {
         const feedRes = await fetch(source.url, {
           headers: {
-            "User-Agent": "Mozilla/5.0 (compatible; WarMonitor/1.0; +https://war-pied-two.vercel.app)",
+            "User-Agent": "Mozilla/5.0 (compatible; WarMonitor/1.0)",
             "Accept": "application/rss+xml, application/xml, text/xml, */*",
           },
-          signal: AbortSignal.timeout(15000),
+          signal: AbortSignal.timeout(8000),
           cache: "no-store",
         });
 
         if (!feedRes.ok) continue;
         const feedText = await feedRes.text();
-        const items = parseRSSItems(feedText).slice(0, 5);
+        const items = parseRSSItems(feedText).slice(0, 3); // Keep low to fit in timeout
 
         for (const item of items) {
+          if (!item.link || !item.title) continue;
+
           const existing = await query("SELECT id FROM articles WHERE url = $1", [item.link]);
           if (existing.length > 0) continue;
 
-          const { translatedTitle, summary } = await translateAndSummarize(
-            item.title, item.description || "", source.language
+          // Single LLM call: translate + summarize + classify in one shot
+          const result = await chatCompletion(MODELS.fast, [
+            {
+              role: "system",
+              content: `You process news articles. Do ALL of these in ONE response as JSON:
+1. If not English, translate the title to English
+2. Write a 2-sentence neutral summary (remove propaganda)
+3. Classify: is this about a military/security/conflict event?
+4. If yes, provide location and severity
+
+Return JSON:
+{
+  "title": "English title",
+  "summary": "2 sentence neutral summary",
+  "is_conflict": true/false,
+  "conflict_type": "airstrike|missile|drone|bombing|shelling|ground_attack|naval|cyber|sanctions|protest|military_deployment|border_incident|humanitarian|other",
+  "severity": "LOW|MEDIUM|HIGH|CRITICAL|MAJOR",
+  "location": "city, country"
+}`,
+            },
+            {
+              role: "user",
+              content: `Title: ${item.title}\nContent: ${(item.description || "").slice(0, 2000)}`,
+            },
+          ], { response_format: { type: "json_object" } });
+
+          let parsed;
+          try {
+            parsed = JSON.parse(result.choices[0]?.message?.content || "{}");
+          } catch {
+            continue;
+          }
+
+          const title = parsed.title || item.title;
+          const summary = parsed.summary || "";
+
+          // Get embedding
+          const embedding = await getEmbedding(`${title} ${summary}`);
+
+          // Save article
+          const rows = await query(
+            `INSERT INTO articles (source_id, title, original_title, content, summary, url, language, region, published_at, embedding)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10::vector)
+             ON CONFLICT (url) DO UPDATE SET summary = $5, embedding = $10::vector
+             RETURNING id`,
+            [source.id, title, source.language !== "en" ? item.title : null,
+             item.description || null, summary, item.link, source.language,
+             source.region, item.pubDate || new Date().toISOString(), vectorToSql(embedding)]
           );
-
-          const articleId = await saveArticle({
-            source_id: source.id,
-            title: translatedTitle,
-            original_title: source.language !== "en" ? item.title : undefined,
-            content: item.description,
-            summary,
-            url: item.link,
-            language: source.language,
-            region: source.region,
-            published_at: item.pubDate,
-          });
-
+          const articleId = rows[0].id;
           processed++;
 
-          const classification = await classifyAttack(translatedTitle, summary);
-          if (classification?.isAttack && classification.location) {
-            const coords = await geocode(classification.location);
-            if (coords) {
-              await query(
-                `INSERT INTO attacks (article_id, attack_type, severity, location, lat, lon, description) VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-                [articleId, classification.type, classification.severity, classification.location, coords.lat, coords.lon, summary]
+          // If conflict event, geocode and save attack
+          if (parsed.is_conflict && parsed.location) {
+            try {
+              const geoRes = await fetch(
+                `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(parsed.location)}&format=json&limit=1`,
+                { headers: { "User-Agent": "WarMonitor/1.0" }, signal: AbortSignal.timeout(5000) }
               );
-              attacks++;
-            }
+              const geoData = await geoRes.json();
+              if (geoData.length > 0) {
+                await query(
+                  `INSERT INTO attacks (article_id, attack_type, severity, location, lat, lon, description)
+                   VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+                  [articleId, parsed.conflict_type, parsed.severity, parsed.location,
+                   parseFloat(geoData[0].lat), parseFloat(geoData[0].lon), summary]
+                );
+                attacks++;
+              }
+            } catch { /* geocode failed, skip */ }
           }
         }
       } catch (err) {
         const e = err as Error;
-        const cause = e.cause ? ` [cause: ${String(e.cause)}]` : "";
-        errors.push(`${source.name}: ${e.name}: ${e.message}${cause}`);
+        errors.push(`${source.name}: ${e.message}`);
       }
     }
 
