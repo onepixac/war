@@ -3,7 +3,7 @@ import { query } from "@/lib/db";
 import { chatCompletion, MODELS } from "@/lib/groq";
 import { getEmbedding, vectorToSql } from "@/lib/embeddings";
 
-export const maxDuration = 60;
+export const maxDuration = 300; // 5 minutes for Vercel Pro, 60 for Hobby
 
 export async function GET(request: NextRequest) {
   const authHeader = request.headers.get("authorization");
@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
 
         if (!feedRes.ok) continue;
         const feedText = await feedRes.text();
-        const items = parseRSSItems(feedText).slice(0, 3); // Keep low to fit in timeout
+        const items = parseRSSItems(feedText).slice(0, 8); // Process up to 8 items per feed
 
         for (const item of items) {
           if (!item.link || !item.title) continue;
