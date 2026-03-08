@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/db";
 import { translateAndSummarize, classifyAttack, geocode, saveArticle } from "@/lib/services/news";
 
+export const maxDuration = 60; // Vercel function timeout: 60 seconds
+
 export async function GET(request: NextRequest) {
   const authHeader = request.headers.get("authorization");
   if (process.env.CRON_SECRET && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
@@ -22,8 +24,12 @@ export async function GET(request: NextRequest) {
     for (const source of sources) {
       try {
         const feedRes = await fetch(source.url, {
-          headers: { "User-Agent": "WarMonitor/1.0" },
-          signal: AbortSignal.timeout(10000),
+          headers: {
+            "User-Agent": "Mozilla/5.0 (compatible; WarMonitor/1.0; +https://war-pied-two.vercel.app)",
+            "Accept": "application/rss+xml, application/xml, text/xml, */*",
+          },
+          signal: AbortSignal.timeout(15000),
+          cache: "no-store",
         });
 
         if (!feedRes.ok) continue;
