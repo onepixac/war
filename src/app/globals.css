@@ -1,28 +1,24 @@
-body {
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
   background-color: #0a0a0a !important;
   min-height: 100vh;
+  overflow: hidden;
 }
 
-.nav-tabs .nav-link {
-  color: #6c757d;
-  border: none;
-  border-bottom: 2px solid transparent;
-  transition: all 0.2s;
+/* Nav pills */
+.nav-pills .nav-link {
+  border-radius: 6px;
+  transition: all 0.15s;
 }
 
-.nav-tabs .nav-link:hover {
-  color: #adb5bd;
-  border-bottom-color: #495057;
-}
-
-.nav-tabs .nav-link.active {
-  color: #fff !important;
-  background: transparent !important;
-  border-bottom-color: #0d6efd !important;
-}
-
-.nav-tabs {
-  border-bottom: 1px solid #1a1a2e;
+.nav-pills .nav-link:not(.active):hover {
+  color: #adb5bd !important;
+  background: rgba(255,255,255,0.05);
 }
 
 .card {
@@ -48,6 +44,16 @@ body {
   background: #1a1a2e !important;
   color: #fff !important;
   border-color: #333 !important;
+}
+
+.leaflet-control-attribution {
+  background: rgba(0,0,0,0.5) !important;
+  color: #666 !important;
+  font-size: 10px !important;
+}
+
+.leaflet-control-attribution a {
+  color: #888 !important;
 }
 
 /* Scrollbar */

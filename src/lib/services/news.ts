@@ -1,6 +1,6 @@
 import { chatCompletion, MODELS } from "@/lib/groq";
 import { query } from "@/lib/db";
-import { textToVector, vectorToSql } from "@/lib/embeddings";
+import { getEmbedding, vectorToSql } from "@/lib/embeddings";
 
 export interface Article {
   id: number;
@@ -105,7 +105,7 @@ export async function saveArticle(article: {
   region: string;
   published_at?: string;
 }) {
-  const embedding = textToVector(`${article.title} ${article.summary}`);
+  const embedding = await getEmbedding(`${article.title} ${article.summary}`);
   const embeddingStr = vectorToSql(embedding);
 
   const rows = await query(
@@ -121,7 +121,7 @@ export async function saveArticle(article: {
 }
 
 export async function searchArticles(queryText: string, limit: number = 10): Promise<Article[]> {
-  const queryVector = textToVector(queryText);
+  const queryVector = await getEmbedding(queryText);
   const embeddingStr = vectorToSql(queryVector);
 
   return await query(

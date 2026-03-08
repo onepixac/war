@@ -45,7 +45,7 @@ export async function initDB() {
       region TEXT,
       published_at TIMESTAMP,
       fetched_at TIMESTAMP DEFAULT NOW(),
-      embedding vector(384),
+      embedding vector(1024),
       metadata JSONB DEFAULT '{}'
     )
   `);

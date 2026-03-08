@@ -54,7 +54,7 @@ export default function ChatPanel() {
   };
 
   return (
-    <div className="d-flex flex-column" style={{ height: 500 }}>
+    <div className="d-flex flex-column" style={{ height: "100%" }}>
       <div className="flex-grow-1 overflow-auto mb-3 pe-2" style={{ minHeight: 0 }}>
         {messages.length === 0 && (
           <div className="text-secondary text-center py-5">
