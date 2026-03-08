@@ -87,5 +87,8 @@ export async function initDB() {
     )
   `);
 
+  // Ensure embedding column is 1024 dimensions (may have been created as 384)
+  await query(`ALTER TABLE articles ALTER COLUMN embedding TYPE vector(1024)`).catch(() => {});
+
   console.log("Database initialized successfully");
 }
