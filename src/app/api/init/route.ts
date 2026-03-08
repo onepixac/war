@@ -11,15 +11,22 @@ export async function POST() {
     await query("DELETE FROM sources");
 
     const defaultSources = [
-      // Western - verified working on Vercel
+      // Western
       { name: "NPR World", url: "https://feeds.npr.org/1004/rss.xml", region: "western", language: "en", category: "independent" },
       { name: "The Guardian World", url: "https://www.theguardian.com/world/rss", region: "western", language: "en", category: "independent" },
       { name: "DW News", url: "https://rss.dw.com/rdf/rss-en-world", region: "western", language: "en", category: "independent" },
       { name: "ABC News Intl", url: "https://abcnews.go.com/abcnews/internationalheadlines", region: "western", language: "en", category: "independent" },
-      // Middle East
+      // Middle East & Israel
       { name: "Times of Israel", url: "https://www.timesofisrael.com/feed/", region: "israel", language: "en", category: "independent" },
+      { name: "Anadolu Agency", url: "https://www.aa.com.tr/en/rss/default?cat=world", region: "turkey", language: "en", category: "state" },
       // Asia
       { name: "India Today", url: "https://www.indiatoday.in/rss/home", region: "south_asia", language: "en", category: "independent" },
+      // Conflict-focused
+      { name: "The Guardian Middle East", url: "https://www.theguardian.com/world/middleeast/rss", region: "middle_east", language: "en", category: "independent" },
+      { name: "NPR Africa", url: "https://feeds.npr.org/1126/rss.xml", region: "western", language: "en", category: "independent" },
+      { name: "DW Asia", url: "https://rss.dw.com/rdf/rss-en-asia", region: "china", language: "en", category: "independent" },
+      { name: "The Guardian Ukraine", url: "https://www.theguardian.com/world/ukraine/rss", region: "russia", language: "en", category: "independent" },
+      { name: "DW Europe", url: "https://rss.dw.com/rdf/rss-en-eu", region: "western", language: "en", category: "independent" },
     ];
 
     for (const source of defaultSources) {

@@ -60,15 +60,23 @@ export async function classifyAttack(
   title: string,
   summary: string
 ): Promise<{ isAttack: boolean; type?: string; severity?: string; location?: string } | null> {
-  const attackKeywords = /attack|strike|bomb|missile|shell|drone|kill|dead|casualt|explo|assault|raid|fire|shoot|clash/i;
-  if (!attackKeywords.test(title) && !attackKeywords.test(summary)) return null;
+  // Broad keyword pre-filter — catches conflicts, tensions, military, security events
+  const conflictKeywords = /attack|strike|bomb|missile|shell|drone|kill|dead|casualt|explo|assault|raid|fire|shoot|clash|war|conflict|military|troops|soldier|weapon|sanction|nuclear|terror|hostage|siege|invasi|occupation|ceasefire|escalat|threat|tension|deploy|naval|airforce|army|militia|rebel|insurgent|protest|riot|coup|arrest|detain|prison|refugee|displac|humanitarian|crisis|border|checkpoint|convoy/i;
+  if (!conflictKeywords.test(title) && !conflictKeywords.test(summary)) return null;
 
   const result = await chatCompletion(MODELS.fast, [
     {
       role: "system",
-      content: `You classify news articles about military/security events. Return JSON:
-{"isAttack": boolean, "type": "airstrike|ground_attack|missile|drone|bombing|shelling|naval|cyber|other", "severity": "LOW|MEDIUM|HIGH|CRITICAL|MAJOR", "location": "city, country or region"}
-If not a military/security event, return {"isAttack": false}.`,
+      content: `You classify news about military, security, and geopolitical conflict events. Be INCLUSIVE — classify any event involving armed conflict, military operations, security incidents, terrorist attacks, border tensions, sanctions, protests/riots, humanitarian crises in conflict zones, or geopolitical confrontations.
+
+Return JSON:
+{"isAttack": boolean, "type": "airstrike|ground_attack|missile|drone|bombing|shelling|naval|cyber|sanctions|protest|humanitarian|military_deployment|border_incident|other", "severity": "LOW|MEDIUM|HIGH|CRITICAL|MAJOR", "location": "specific city/town, country"}
+
+Guidelines:
+- isAttack=true for ANY conflict/security/military event (not just kinetic attacks)
+- Always provide a specific location (city + country preferred)
+- severity: LOW=minor incident, MEDIUM=notable event, HIGH=significant casualties/impact, CRITICAL=major escalation, MAJOR=war-level event
+- If the article mentions a specific country/region but no city, use the capital or most relevant city`,
     },
     { role: "user", content: `Title: ${title}\nSummary: ${summary}` },
   ], { response_format: { type: "json_object" } });

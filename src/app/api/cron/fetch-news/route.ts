@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
 
         if (!feedRes.ok) continue;
         const feedText = await feedRes.text();
-        const items = parseRSSItems(feedText).slice(0, 5);
+        const items = parseRSSItems(feedText).slice(0, 10);
 
         for (const item of items) {
           const existing = await query("SELECT id FROM articles WHERE url = $1", [item.link]);

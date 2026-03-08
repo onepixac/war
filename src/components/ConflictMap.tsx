@@ -31,7 +31,7 @@ export default function ConflictMap() {
   const mapInstanceRef = useRef<unknown>(null);
 
   useEffect(() => {
-    fetch("/api/news?type=attacks&hours=72")
+    fetch("/api/news?type=attacks&hours=168")
       .then((r) => r.json())
       .then((data) => setAttacks(data.attacks || []))
       .catch(console.error)
@@ -41,7 +41,10 @@ export default function ConflictMap() {
   useEffect(() => {
     if (typeof window === "undefined" || loading || mapInstanceRef.current) return;
 
-    import("leaflet").then((L) => {
+    Promise.all([
+      import("leaflet"),
+      import("leaflet.markercluster"),
+    ]).then(([L]) => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       delete (L.Icon.Default.prototype as any)._getIconUrl;
       L.Icon.Default.mergeOptions({
@@ -52,30 +55,81 @@ export default function ConflictMap() {
 
       if (!mapRef.current) return;
 
-      const map = L.map(mapRef.current, { zoomControl: false }).setView([30, 40], 3);
+      const map = L.map(mapRef.current, {
+        zoomControl: false,
+        minZoom: 3,
+        maxZoom: 18,
+        maxBounds: [[-85, -180], [85, 180]],
+        maxBoundsViscosity: 1.0,
+      }).setView([30, 40], 3);
       mapInstanceRef.current = map;
 
-      // Zoom controls bottom-right
       L.control.zoom({ position: "bottomright" }).addTo(map);
 
       L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
         attribution: '&copy; <a href="https://www.openstreetmap.org/">OSM</a> &copy; <a href="https://carto.com/">CARTO</a>',
-        maxZoom: 19,
+        maxZoom: 18,
+        noWrap: true,
       }).addTo(map);
+
+      // Marker cluster group
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const clusters = (L as any).markerClusterGroup({
+        maxClusterRadius: 50,
+        spiderfyOnMaxZoom: true,
+        showCoverageOnHover: false,
+        zoomToBoundsOnClick: true,
+        iconCreateFunction: (cluster: { getChildCount: () => number; getAllChildMarkers: () => { options: { severity?: string } }[] }) => {
+          const count = cluster.getChildCount();
+          const children = cluster.getAllChildMarkers();
+
+          // Determine cluster color by highest severity
+          const severityOrder = ["LOW", "MEDIUM", "HIGH", "CRITICAL", "MAJOR"];
+          let maxSev = 0;
+          children.forEach((m: { options: { severity?: string } }) => {
+            const idx = severityOrder.indexOf(m.options.severity || "LOW");
+            if (idx > maxSev) maxSev = idx;
+          });
+          const color = SEVERITY_COLORS[severityOrder[maxSev]] || SEVERITY_COLORS.LOW;
+
+          const size = count < 10 ? 36 : count < 50 ? 44 : 52;
+
+          return L.divIcon({
+            html: `<div style="
+              background:${color};
+              width:${size}px;
+              height:${size}px;
+              border-radius:50%;
+              display:flex;
+              align-items:center;
+              justify-content:center;
+              color:#fff;
+              font-weight:700;
+              font-size:${count < 10 ? 14 : 13}px;
+              border:2px solid rgba(255,255,255,0.4);
+              box-shadow:0 2px 8px rgba(0,0,0,0.5);
+            ">${count}</div>`,
+            className: "",
+            iconSize: L.point(size, size),
+          });
+        },
+      });
 
       attacks.forEach((attack) => {
         const color = SEVERITY_COLORS[attack.severity] || SEVERITY_COLORS.LOW;
 
-        const circle = L.circleMarker([attack.lat, attack.lon], {
+        const marker = L.circleMarker([attack.lat, attack.lon], {
           radius: attack.severity === "MAJOR" ? 14 : attack.severity === "CRITICAL" ? 11 : 8,
           fillColor: color,
           color: "#fff",
           weight: 1,
           opacity: 0.8,
           fillOpacity: 0.7,
-        }).addTo(map);
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          severity: attack.severity as any,
+        } as L.CircleMarkerOptions);
 
-        circle.bindPopup(`
+        marker.bindPopup(`
           <div style="min-width:220px">
             <strong>${attack.location}</strong><br/>
             <span style="color:${color};font-weight:600">${attack.severity}</span> — ${attack.attack_type}<br/>
@@ -83,7 +137,11 @@ export default function ConflictMap() {
             <small style="opacity:0.6">${attack.source_name} · ${new Date(attack.classified_at).toLocaleString()}</small>
           </div>
         `);
+
+        clusters.addLayer(marker);
       });
+
+      map.addLayer(clusters);
     });
 
     return () => {
