@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
+import { runIntelAgent } from "@/lib/llamaindex/agents";
 import { searchArticles } from "@/lib/services/news";
-import { groq, MODELS, rateLimiter } from "@/lib/groq";
 
 export async function POST(request: NextRequest) {
   try {
@@ -13,56 +13,13 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // 1. Retrieve relevant articles
-    const articles = await searchArticles(message, 8);
-
-    const context = articles.length > 0
-      ? articles
-          .map(
-            (a, i) =>
-              `[${i + 1}] ${a.source_name} (${a.region}) - ${a.title}\n${a.summary}\nURL: ${a.url}`
-          )
-          .join("\n\n")
-      : "No relevant articles found in the database.";
-
-    const sources = articles.slice(0, 5).map((a) => ({
+    // Get sources for the UI (the agent will also search internally via tools)
+    const articles = await searchArticles(message, 5);
+    const sources = articles.map((a) => ({
       title: a.title,
       url: a.url,
       source_name: a.source_name || "Unknown",
     }));
-
-    const messages = [
-      {
-        role: "system" as const,
-        content: `You are a geopolitical analyst assistant. Answer questions about global conflicts and security events based ONLY on the provided news articles.
-
-Rules:
-- Base your answers on the provided sources only
-- Cite sources by number [1], [2], etc.
-- If information is from a single source type (e.g., only state media), mention this caveat
-- Be neutral and factual
-- If you don't have enough information, say so
-
-Available news articles:
-${context}`,
-      },
-      ...(history || []).map((m: { role: string; content: string }) => ({
-        role: m.role as "user" | "assistant",
-        content: m.content,
-      })),
-      { role: "user" as const, content: message },
-    ];
-
-    // 2. Stream response
-    const stream = await rateLimiter.enqueue(MODELS.quality, () =>
-      groq.chat.completions.create({
-        model: MODELS.quality,
-        messages,
-        temperature: 0.3,
-        max_tokens: 2048,
-        stream: true,
-      })
-    );
 
     // Create SSE stream
     const encoder = new TextEncoder();
@@ -74,17 +31,26 @@ ${context}`,
         );
 
         try {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          for await (const chunk of stream as any) {
-            const content = chunk.choices?.[0]?.delta?.content;
-            if (content) {
-              controller.enqueue(
-                encoder.encode(`data: ${JSON.stringify({ type: "token", content })}\n\n`)
-              );
-            }
+          // Run the LlamaIndex multi-tool agent
+          const result = await runIntelAgent(
+            message,
+            (history || []).slice(-10)
+          );
+
+          // Send the full response as tokens (agent doesn't support streaming natively)
+          const responseText = typeof result === "string" ? result : String(result);
+          // Send in chunks to simulate streaming
+          const chunkSize = 20;
+          for (let i = 0; i < responseText.length; i += chunkSize) {
+            const chunk = responseText.slice(i, i + chunkSize);
+            controller.enqueue(
+              encoder.encode(`data: ${JSON.stringify({ type: "token", content: chunk })}\n\n`)
+            );
           }
+
           controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "done" })}\n\n`));
         } catch (err) {
+          console.error("Agent error:", err);
           controller.enqueue(
             encoder.encode(`data: ${JSON.stringify({ type: "error", error: String(err) })}\n\n`)
           );
