@@ -24,6 +24,16 @@ const SEVERITY_COLORS: Record<string, string> = {
   MAJOR: "#6f42c1",
 };
 
+function getSeverityColor(severity: string): string {
+  // Handle cases where the LLM returned the full enum string
+  const normalized = severity?.split("|")[0]?.trim()?.toUpperCase() || "LOW";
+  return SEVERITY_COLORS[normalized] || SEVERITY_COLORS.LOW;
+}
+
+function getSeverityLabel(severity: string): string {
+  return severity?.split("|")[0]?.trim()?.toUpperCase() || "LOW";
+}
+
 export default function ConflictMap() {
   const [attacks, setAttacks] = useState<Attack[]>([]);
   const [loading, setLoading] = useState(true);
@@ -33,18 +43,18 @@ export default function ConflictMap() {
   useEffect(() => {
     fetch("/api/news?type=attacks&hours=168")
       .then((r) => r.json())
-      .then((data) => setAttacks(data.attacks || []))
+      .then((data) => {
+        console.log("Attacks loaded:", data.attacks?.length);
+        setAttacks(data.attacks || []);
+      })
       .catch(console.error)
       .finally(() => setLoading(false));
   }, []);
 
   useEffect(() => {
-    if (typeof window === "undefined" || loading || mapInstanceRef.current) return;
+    if (typeof window === "undefined" || loading || mapInstanceRef.current || !mapRef.current) return;
 
-    Promise.all([
-      import("leaflet"),
-      import("leaflet.markercluster"),
-    ]).then(([L]) => {
+    import("leaflet").then(async (L) => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       delete (L.Icon.Default.prototype as any)._getIconUrl;
       L.Icon.Default.mergeOptions({
@@ -53,9 +63,7 @@ export default function ConflictMap() {
         shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png",
       });
 
-      if (!mapRef.current) return;
-
-      const map = L.map(mapRef.current, {
+      const map = L.map(mapRef.current!, {
         zoomControl: false,
         minZoom: 3,
         maxZoom: 18,
@@ -72,76 +80,100 @@ export default function ConflictMap() {
         noWrap: true,
       }).addTo(map);
 
-      // Marker cluster group
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const clusters = (L as any).markerClusterGroup({
-        maxClusterRadius: 50,
-        spiderfyOnMaxZoom: true,
-        showCoverageOnHover: false,
-        zoomToBoundsOnClick: true,
-        iconCreateFunction: (cluster: { getChildCount: () => number; getAllChildMarkers: () => { options: { severity?: string } }[] }) => {
-          const count = cluster.getChildCount();
-          const children = cluster.getAllChildMarkers();
+      // Try to load MarkerCluster, fallback to plain markers
+      let clusterGroup: L.LayerGroup | null = null;
+      try {
+        await import("leaflet.markercluster");
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        clusterGroup = (L as any).markerClusterGroup({
+          maxClusterRadius: 50,
+          spiderfyOnMaxZoom: true,
+          showCoverageOnHover: false,
+          zoomToBoundsOnClick: true,
+          iconCreateFunction: (cluster: { getChildCount: () => number; getAllChildMarkers: () => { options: Record<string, unknown> }[] }) => {
+            const count = cluster.getChildCount();
+            const children = cluster.getAllChildMarkers();
+            const severityOrder = ["LOW", "MEDIUM", "HIGH", "CRITICAL", "MAJOR"];
+            let maxSev = 0;
+            children.forEach((m) => {
+              const sev = (m.options as Record<string, unknown>).customSeverity as string || "LOW";
+              const idx = severityOrder.indexOf(sev);
+              if (idx > maxSev) maxSev = idx;
+            });
+            const color = SEVERITY_COLORS[severityOrder[maxSev]] || SEVERITY_COLORS.LOW;
+            const size = count < 10 ? 36 : count < 50 ? 44 : 52;
 
-          // Determine cluster color by highest severity
-          const severityOrder = ["LOW", "MEDIUM", "HIGH", "CRITICAL", "MAJOR"];
-          let maxSev = 0;
-          children.forEach((m: { options: { severity?: string } }) => {
-            const idx = severityOrder.indexOf(m.options.severity || "LOW");
-            if (idx > maxSev) maxSev = idx;
-          });
-          const color = SEVERITY_COLORS[severityOrder[maxSev]] || SEVERITY_COLORS.LOW;
+            return L.divIcon({
+              html: `<div style="
+                background:${color};
+                width:${size}px;height:${size}px;
+                border-radius:50%;
+                display:flex;align-items:center;justify-content:center;
+                color:#fff;font-weight:700;font-size:${count < 10 ? 14 : 13}px;
+                border:2px solid rgba(255,255,255,0.4);
+                box-shadow:0 2px 8px rgba(0,0,0,0.5);
+              ">${count}</div>`,
+              className: "",
+              iconSize: L.point(size, size),
+            });
+          },
+        });
+      } catch (e) {
+        console.warn("MarkerCluster not available, using plain markers", e);
+        clusterGroup = L.layerGroup();
+      }
 
-          const size = count < 10 ? 36 : count < 50 ? 44 : 52;
-
-          return L.divIcon({
-            html: `<div style="
-              background:${color};
-              width:${size}px;
-              height:${size}px;
-              border-radius:50%;
-              display:flex;
-              align-items:center;
-              justify-content:center;
-              color:#fff;
-              font-weight:700;
-              font-size:${count < 10 ? 14 : 13}px;
-              border:2px solid rgba(255,255,255,0.4);
-              box-shadow:0 2px 8px rgba(0,0,0,0.5);
-            ">${count}</div>`,
-            className: "",
-            iconSize: L.point(size, size),
-          });
-        },
-      });
+      console.log("Adding", attacks.length, "markers to map");
 
       attacks.forEach((attack) => {
-        const color = SEVERITY_COLORS[attack.severity] || SEVERITY_COLORS.LOW;
+        if (!attack.lat || !attack.lon) return;
+
+        const sevLabel = getSeverityLabel(attack.severity);
+        const color = getSeverityColor(attack.severity);
+        const radius = sevLabel === "MAJOR" ? 14 : sevLabel === "CRITICAL" ? 11 : sevLabel === "HIGH" ? 9 : 7;
 
         const marker = L.circleMarker([attack.lat, attack.lon], {
-          radius: attack.severity === "MAJOR" ? 14 : attack.severity === "CRITICAL" ? 11 : 8,
+          radius,
           fillColor: color,
           color: "#fff",
-          weight: 1,
-          opacity: 0.8,
-          fillOpacity: 0.7,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          severity: attack.severity as any,
+          weight: 2,
+          opacity: 0.9,
+          fillOpacity: 0.8,
         } as L.CircleMarkerOptions);
+
+        // Store severity for cluster coloring
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (marker.options as any).customSeverity = sevLabel;
 
         marker.bindPopup(`
           <div style="min-width:220px">
             <strong>${attack.location}</strong><br/>
-            <span style="color:${color};font-weight:600">${attack.severity}</span> — ${attack.attack_type}<br/>
+            <span style="color:${color};font-weight:600">${sevLabel}</span> — ${attack.attack_type?.split("|")[0]}<br/>
             <small>${attack.description || attack.title}</small><br/>
             <small style="opacity:0.6">${attack.source_name} · ${new Date(attack.classified_at).toLocaleString()}</small>
           </div>
         `);
 
-        clusters.addLayer(marker);
+        clusterGroup!.addLayer(marker);
       });
 
-      map.addLayer(clusters);
+      map.addLayer(clusterGroup!);
+
+      // Also add pulsing effect for CRITICAL/MAJOR events
+      attacks.forEach((attack) => {
+        if (!attack.lat || !attack.lon) return;
+        const sevLabel = getSeverityLabel(attack.severity);
+        if (sevLabel === "CRITICAL" || sevLabel === "MAJOR") {
+          L.circleMarker([attack.lat, attack.lon], {
+            radius: 20,
+            fillColor: getSeverityColor(attack.severity),
+            color: getSeverityColor(attack.severity),
+            weight: 1,
+            opacity: 0.3,
+            fillOpacity: 0.1,
+          }).addTo(map);
+        }
+      });
     });
 
     return () => {
@@ -165,7 +197,6 @@ export default function ConflictMap() {
     <div style={{ position: "relative", width: "100%", height: "100%" }}>
       <div ref={mapRef} style={{ width: "100%", height: "100%" }} />
 
-      {/* Legend overlay */}
       <div
         style={{
           position: "absolute",
