@@ -9,10 +9,9 @@ export const searchNewsTool = tool({
   description: "Search for news articles related to a topic using semantic vector search. Returns the most relevant articles from the database.",
   parameters: z.object({
     query: z.string().describe("The search query about a conflict, event, or geopolitical topic"),
-    limit: z.coerce.number().optional().default(8).describe("Maximum number of articles to return"),
   }),
-  execute: async ({ query, limit }) => {
-    const articles = await searchArticles(query, limit);
+  execute: async ({ query }) => {
+    const articles = await searchArticles(query, 10);
     if (articles.length === 0) return "No relevant articles found in the database.";
     return articles
       .map((a, i) => `[${i + 1}] ${a.source_name} (${a.region}) - ${a.title}\nSummary: ${a.summary}\nURL: ${a.url}`)
@@ -24,11 +23,10 @@ export const getRecentNewsTool = tool({
   name: "get_recent_news",
   description: "Get the most recent news articles, optionally filtered by region. Use this to see what's happening right now.",
   parameters: z.object({
-    region: z.string().optional().describe("Filter by region: iran, russia, israel, gulf, middle_east, china, turkey, south_asia, western"),
-    limit: z.coerce.number().optional().default(15).describe("Maximum number of articles to return"),
+    region: z.string().optional().describe("Filter by region: iran, russia, israel, gulf, middle_east, china, turkey, south_asia, western. Leave empty for all regions."),
   }),
-  execute: async ({ region, limit }) => {
-    const articles = await getRecentArticles(limit, region);
+  execute: async ({ region }) => {
+    const articles = await getRecentArticles(15, region);
     if (articles.length === 0) return "No recent articles found.";
     return articles
       .map((a, i) => `[${i + 1}] ${a.source_name} (${a.source_category}, ${a.region}) - ${a.title}\n${a.summary}`)
@@ -38,13 +36,13 @@ export const getRecentNewsTool = tool({
 
 export const getAttacksTool = tool({
   name: "get_attacks",
-  description: "Get recent military/security incidents and attacks with their locations, severity, and types. Useful for answering questions about ongoing conflicts.",
+  description: "Get recent military/security incidents and attacks from the last 7 days with their locations, severity, and types. Useful for answering questions about ongoing conflicts.",
   parameters: z.object({
-    hours: z.coerce.number().optional().default(168).describe("How many hours back to look (default: 168 = 7 days)"),
+    query: z.string().optional().describe("Optional context about what kind of attacks to focus on"),
   }),
-  execute: async ({ hours }) => {
-    const attacks = await getAttacks(hours);
-    if (attacks.length === 0) return "No attacks found in the specified timeframe.";
+  execute: async () => {
+    const attacks = await getAttacks(168);
+    if (attacks.length === 0) return "No attacks found in the last 7 days.";
 
     const bySeverity: Record<string, number> = {};
     const byType: Record<string, number> = {};
@@ -55,7 +53,7 @@ export const getAttacksTool = tool({
       byType[type] = (byType[type] || 0) + 1;
     });
 
-    let summary = `Found ${attacks.length} incidents in the last ${hours} hours.\n`;
+    let summary = `Found ${attacks.length} incidents in the last 7 days.\n`;
     summary += `By severity: ${Object.entries(bySeverity).map(([k, v]) => `${k}: ${v}`).join(", ")}\n`;
     summary += `By type: ${Object.entries(byType).map(([k, v]) => `${k}: ${v}`).join(", ")}\n\n`;
     summary += "Recent incidents:\n";
