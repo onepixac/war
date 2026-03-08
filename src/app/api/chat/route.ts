@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { runIntelAgent } from "@/lib/llamaindex/agents";
 import { searchArticles } from "@/lib/services/news";
+import { groq, MODELS, rateLimiter } from "@/lib/groq";
 
 export async function POST(request: NextRequest) {
   try {
@@ -13,7 +14,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Get sources for the UI (the agent will also search internally via tools)
+    // Get sources for the UI
     const articles = await searchArticles(message, 5);
     const sources = articles.map((a) => ({
       title: a.title,
@@ -21,7 +22,6 @@ export async function POST(request: NextRequest) {
       source_name: a.source_name || "Unknown",
     }));
 
-    // Create SSE stream
     const encoder = new TextEncoder();
     const readable = new ReadableStream({
       async start(controller) {
@@ -31,26 +31,51 @@ export async function POST(request: NextRequest) {
         );
 
         try {
-          // Run the LlamaIndex multi-tool agent
-          const result = await runIntelAgent(
+          // Phase 1: Agent gathers intelligence via tools (non-streaming)
+          controller.enqueue(
+            encoder.encode(`data: ${JSON.stringify({ type: "status", content: "Gathering intelligence..." })}\n\n`)
+          );
+
+          const agentResult = await runIntelAgent(
             message,
             (history || []).slice(-10)
           );
 
-          // Send the full response as tokens (agent doesn't support streaming natively)
-          const responseText = typeof result === "string" ? result : String(result);
-          // Send in chunks to simulate streaming
-          const chunkSize = 20;
-          for (let i = 0; i < responseText.length; i += chunkSize) {
-            const chunk = responseText.slice(i, i + chunkSize);
-            controller.enqueue(
-              encoder.encode(`data: ${JSON.stringify({ type: "token", content: chunk })}\n\n`)
-            );
+          const agentText = typeof agentResult === "string" ? agentResult : String(agentResult);
+
+          // Phase 2: Stream the refined response via Groq
+          const stream = await rateLimiter.enqueue(MODELS.quality, () =>
+            groq.chat.completions.create({
+              model: MODELS.quality,
+              messages: [
+                {
+                  role: "system",
+                  content: `You are a geopolitical intelligence analyst. Rewrite the following intelligence briefing in a clear, well-structured format. Use bullet points, bold sections, and clear language. Keep the same information and citations but improve readability. Do NOT add new information.`,
+                },
+                {
+                  role: "user",
+                  content: `Intelligence briefing to reformat:\n\n${agentText}`,
+                },
+              ],
+              temperature: 0.2,
+              max_tokens: 2048,
+              stream: true,
+            })
+          );
+
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          for await (const chunk of stream as any) {
+            const content = chunk.choices?.[0]?.delta?.content;
+            if (content) {
+              controller.enqueue(
+                encoder.encode(`data: ${JSON.stringify({ type: "token", content })}\n\n`)
+              );
+            }
           }
 
           controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "done" })}\n\n`));
         } catch (err) {
-          console.error("Agent error:", err);
+          console.error("Chat error:", err);
           controller.enqueue(
             encoder.encode(`data: ${JSON.stringify({ type: "error", error: String(err) })}\n\n`)
           );

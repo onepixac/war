@@ -1,13 +1,17 @@
 // Real embeddings using your custom vLLM embedding server (All1eOnepix/embedding_model)
 // Same model used in dati and slides projects, served on GPU M2
 
-const EMBEDDING_API_URL = process.env.EMBEDDING_API_URL || "http://213.171.186.218:8002/v1";
+const EMBEDDING_API_URL = process.env.EMBEDDING_API_URL || "";
 const EMBEDDING_API_KEY = process.env.EMBEDDING_API_KEY || "";
-const EMBEDDING_MODEL = process.env.EMBEDDING_MODEL || "All1eOnepix/embedding_model";
+const EMBEDDING_MODEL = process.env.EMBEDDING_MODEL || "";
 
 export const EMBEDDING_DIMENSIONS = 1024;
 
 export async function getEmbedding(text: string): Promise<number[]> {
+  if (!EMBEDDING_API_URL) {
+    return fallbackEmbedding(text);
+  }
+
   try {
     const res = await fetch(`${EMBEDDING_API_URL}/embeddings`, {
       method: "POST",

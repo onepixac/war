@@ -24,6 +24,7 @@ export default function ChatPanel() {
   const [loading, setLoading] = useState(false);
   const [streamingContent, setStreamingContent] = useState("");
   const [streamingSources, setStreamingSources] = useState<Message["sources"]>([]);
+  const [statusText, setStatusText] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -39,6 +40,7 @@ export default function ChatPanel() {
     setLoading(true);
     setStreamingContent("");
     setStreamingSources([]);
+    setStatusText("");
 
     try {
       const res = await fetch("/api/chat", {
@@ -73,7 +75,10 @@ export default function ChatPanel() {
             if (data.type === "sources") {
               sources = data.sources;
               setStreamingSources(data.sources);
+            } else if (data.type === "status") {
+              setStatusText(data.content);
             } else if (data.type === "token") {
+              setStatusText("");
               fullContent += data.content;
               setStreamingContent(fullContent);
             } else if (data.type === "error") {
@@ -179,7 +184,9 @@ export default function ChatPanel() {
         {loading && !streamingContent && (
           <div className="mb-3 fade-in d-flex align-items-center gap-2">
             <Spinner animation="border" size="sm" style={{ color: "#e57373", width: 14, height: 14 }} />
-            <small style={{ color: "#484f58", fontSize: "0.78rem" }}>Analyzing with intelligence agents...</small>
+            <small style={{ color: "#484f58", fontSize: "0.78rem" }}>
+              {statusText || "Analyzing with intelligence agents..."}
+            </small>
           </div>
         )}
         <div ref={messagesEndRef} />
