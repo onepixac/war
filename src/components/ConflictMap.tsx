@@ -25,7 +25,6 @@ const SEVERITY_COLORS: Record<string, string> = {
 };
 
 function getSeverityColor(severity: string): string {
-  // Handle cases where the LLM returned the full enum string
   const normalized = severity?.split("|")[0]?.trim()?.toUpperCase() || "LOW";
   return SEVERITY_COLORS[normalized] || SEVERITY_COLORS.LOW;
 }
@@ -34,11 +33,28 @@ function getSeverityLabel(severity: string): string {
   return severity?.split("|")[0]?.trim()?.toUpperCase() || "LOW";
 }
 
+// Wait for global L (leaflet) and L.markerClusterGroup to be available
+function waitForLeaflet(): Promise<typeof window.L> {
+  return new Promise((resolve) => {
+    const check = () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const L = (window as any).L;
+      if (L && L.markerClusterGroup) {
+        resolve(L);
+      } else {
+        setTimeout(check, 100);
+      }
+    };
+    check();
+  });
+}
+
 export default function ConflictMap() {
   const [attacks, setAttacks] = useState<Attack[]>([]);
   const [loading, setLoading] = useState(true);
   const mapRef = useRef<HTMLDivElement>(null);
-  const mapInstanceRef = useRef<unknown>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const mapInstanceRef = useRef<any>(null);
 
   useEffect(() => {
     fetch("/api/news?type=attacks&hours=168")
@@ -54,15 +70,7 @@ export default function ConflictMap() {
   useEffect(() => {
     if (typeof window === "undefined" || loading || mapInstanceRef.current || !mapRef.current) return;
 
-    import("leaflet").then(async (L) => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      delete (L.Icon.Default.prototype as any)._getIconUrl;
-      L.Icon.Default.mergeOptions({
-        iconRetinaUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png",
-        iconUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png",
-        shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png",
-      });
-
+    waitForLeaflet().then((L) => {
       const map = L.map(mapRef.current!, {
         zoomControl: false,
         minZoom: 3,
@@ -80,50 +88,43 @@ export default function ConflictMap() {
         noWrap: true,
       }).addTo(map);
 
-      // Try to load MarkerCluster, fallback to plain markers
-      let clusterGroup: L.LayerGroup | null = null;
-      try {
-        await import("leaflet.markercluster");
+      const clusterGroup = L.markerClusterGroup({
+        maxClusterRadius: 50,
+        spiderfyOnMaxZoom: true,
+        showCoverageOnHover: false,
+        zoomToBoundsOnClick: true,
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        clusterGroup = (L as any).markerClusterGroup({
-          maxClusterRadius: 50,
-          spiderfyOnMaxZoom: true,
-          showCoverageOnHover: false,
-          zoomToBoundsOnClick: true,
-          iconCreateFunction: (cluster: { getChildCount: () => number; getAllChildMarkers: () => { options: Record<string, unknown> }[] }) => {
-            const count = cluster.getChildCount();
-            const children = cluster.getAllChildMarkers();
-            const severityOrder = ["LOW", "MEDIUM", "HIGH", "CRITICAL", "MAJOR"];
-            let maxSev = 0;
-            children.forEach((m) => {
-              const sev = (m.options as Record<string, unknown>).customSeverity as string || "LOW";
-              const idx = severityOrder.indexOf(sev);
-              if (idx > maxSev) maxSev = idx;
-            });
-            const color = SEVERITY_COLORS[severityOrder[maxSev]] || SEVERITY_COLORS.LOW;
-            const size = count < 10 ? 36 : count < 50 ? 44 : 52;
+        iconCreateFunction: (cluster: any) => {
+          const count = cluster.getChildCount();
+          const children = cluster.getAllChildMarkers();
+          const severityOrder = ["LOW", "MEDIUM", "HIGH", "CRITICAL", "MAJOR"];
+          let maxSev = 0;
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          children.forEach((m: any) => {
+            const sev = m.options?.customSeverity as string || "LOW";
+            const idx = severityOrder.indexOf(sev);
+            if (idx > maxSev) maxSev = idx;
+          });
+          const color = SEVERITY_COLORS[severityOrder[maxSev]] || SEVERITY_COLORS.LOW;
+          const size = count < 10 ? 36 : count < 50 ? 44 : 52;
 
-            return L.divIcon({
-              html: `<div style="
-                background:${color};
-                width:${size}px;height:${size}px;
-                border-radius:50%;
-                display:flex;align-items:center;justify-content:center;
-                color:#fff;font-weight:700;font-size:${count < 10 ? 14 : 13}px;
-                border:2px solid rgba(255,255,255,0.4);
-                box-shadow:0 2px 8px rgba(0,0,0,0.5);
-              ">${count}</div>`,
-              className: "",
-              iconSize: L.point(size, size),
-            });
-          },
-        });
-      } catch (e) {
-        console.warn("MarkerCluster not available, using plain markers", e);
-        clusterGroup = L.layerGroup();
-      }
+          return L.divIcon({
+            html: `<div style="
+              background:${color};
+              width:${size}px;height:${size}px;
+              border-radius:50%;
+              display:flex;align-items:center;justify-content:center;
+              color:#fff;font-weight:700;font-size:${count < 10 ? 14 : 13}px;
+              border:2px solid rgba(255,255,255,0.4);
+              box-shadow:0 2px 8px rgba(0,0,0,0.5);
+            ">${count}</div>`,
+            className: "",
+            iconSize: L.point(size, size),
+          });
+        },
+      });
 
-      console.log("Adding", attacks.length, "markers to map");
+      console.log("Adding", attacks.length, "markers to map (cluster mode)");
 
       attacks.forEach((attack) => {
         if (!attack.lat || !attack.lon) return;
@@ -157,16 +158,15 @@ export default function ConflictMap() {
           </div>
         `);
 
-        clusterGroup!.addLayer(marker);
+        clusterGroup.addLayer(marker);
       });
 
-      map.addLayer(clusterGroup!);
+      map.addLayer(clusterGroup);
     });
 
     return () => {
       if (mapInstanceRef.current) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (mapInstanceRef.current as any).remove();
+        mapInstanceRef.current.remove();
         mapInstanceRef.current = null;
       }
     };

@@ -27,6 +27,14 @@ export default function RootLayout({
           rel="stylesheet"
           href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"
         />
+        <script
+          src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"
+          defer
+        />
+        <script
+          src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"
+          defer
+        />
       </head>
       <body className="bg-black text-light">{children}</body>
     </html>
