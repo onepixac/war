@@ -71,7 +71,9 @@ export async function GET(request: NextRequest) {
           }
         }
       } catch (err) {
-        errors.push(`${source.name}: ${(err as Error).message}`);
+        const e = err as Error;
+        const cause = e.cause ? ` [cause: ${String(e.cause)}]` : "";
+        errors.push(`${source.name}: ${e.name}: ${e.message}${cause}`);
       }
     }
 

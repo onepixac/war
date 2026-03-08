@@ -6,25 +6,20 @@ export async function POST() {
     await initDB();
 
     // Reset and re-seed sources
+    await query("DELETE FROM attacks");
+    await query("DELETE FROM articles");
     await query("DELETE FROM sources");
 
     const defaultSources = [
-      // Western - reliable RSS feeds
+      // Western - verified working on Vercel
       { name: "NPR World", url: "https://feeds.npr.org/1004/rss.xml", region: "western", language: "en", category: "independent" },
       { name: "The Guardian World", url: "https://www.theguardian.com/world/rss", region: "western", language: "en", category: "independent" },
-      { name: "CNN World", url: "http://rss.cnn.com/rss/edition_world.rss", region: "western", language: "en", category: "independent" },
       { name: "DW News", url: "https://rss.dw.com/rdf/rss-en-world", region: "western", language: "en", category: "independent" },
+      { name: "ABC News Intl", url: "https://abcnews.go.com/abcnews/internationalheadlines", region: "western", language: "en", category: "independent" },
       // Middle East
-      { name: "Middle East Eye", url: "https://www.middleeasteye.net/rss", region: "middle_east", language: "en", category: "independent" },
       { name: "Times of Israel", url: "https://www.timesofisrael.com/feed/", region: "israel", language: "en", category: "independent" },
-      { name: "Al Monitor", url: "https://www.al-monitor.com/rss", region: "middle_east", language: "en", category: "independent" },
       // Asia
-      { name: "South China Morning Post", url: "https://www.scmp.com/rss/91/feed", region: "china", language: "en", category: "independent" },
-      { name: "Dawn Pakistan", url: "https://www.dawn.com/feeds/home", region: "south_asia", language: "en", category: "independent" },
-      // Russia/Eurasia
-      { name: "Moscow Times", url: "https://www.themoscowtimes.com/rss/news", region: "russia", language: "en", category: "independent" },
-      // Turkey
-      { name: "Daily Sabah", url: "https://www.dailysabah.com/rssFeed/home", region: "turkey", language: "en", category: "state-aligned" },
+      { name: "India Today", url: "https://www.indiatoday.in/rss/home", region: "south_asia", language: "en", category: "independent" },
     ];
 
     for (const source of defaultSources) {
