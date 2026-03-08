@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Form, Button, Card, Spinner, Badge, Row, Col } from "react-bootstrap";
+import { Form, Button, Spinner, Badge, Row, Col } from "react-bootstrap";
 
 interface Message {
   role: "user" | "assistant";
@@ -108,16 +108,34 @@ export default function ChatPanel() {
     sendMessage(input);
   };
 
+  const renderSources = (sources: Message["sources"]) => {
+    if (!sources || sources.length === 0) return null;
+    return (
+      <div className="mt-2 pt-2" style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+        <small style={{ color: "#484f58", fontSize: "0.7rem" }}>Sources:</small>
+        <div className="d-flex flex-wrap gap-1 mt-1">
+          {sources.map((s, j) => (
+            <a key={j} href={s.url} target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none" }}>
+              <Badge className="badge-pastel-teal" style={{ fontSize: "0.65rem", fontWeight: 400 }}>
+                {s.source_name}
+              </Badge>
+            </a>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
   return (
-    <div className="d-flex flex-column" style={{ height: "100%", maxWidth: 900, margin: "0 auto" }}>
+    <div className="d-flex flex-column" style={{ height: "100%", maxWidth: 800, margin: "0 auto" }}>
       <div className="flex-grow-1 overflow-auto mb-3 pe-2" style={{ minHeight: 0 }}>
         {messages.length === 0 && !loading && (
-          <div className="text-center py-5 fade-in">
-            <div className="mb-4">
-              <h4 className="text-light fw-bold mb-1">Intelligence Chat</h4>
-              <p className="text-secondary small mb-4">Ask about global conflicts and security events. Powered by RAG.</p>
-            </div>
-            <Row className="g-2 justify-content-center" style={{ maxWidth: 640, margin: "0 auto" }}>
+          <div className="fade-in" style={{ paddingTop: "15vh", textAlign: "center" }}>
+            <h5 style={{ color: "#c9d1d9", fontWeight: 600, marginBottom: 4 }}>Intelligence Chat</h5>
+            <p style={{ color: "#484f58", fontSize: "0.8rem", marginBottom: "2rem" }}>
+              Ask about global conflicts. Powered by multi-agent RAG.
+            </p>
+            <Row className="g-2 justify-content-center" style={{ maxWidth: 560, margin: "0 auto" }}>
               {SUGGESTED_QUESTIONS.map((q) => (
                 <Col key={q} xs={6} md={4}>
                   <Button
@@ -125,6 +143,7 @@ export default function ChatPanel() {
                     size="sm"
                     className="w-100 text-start"
                     onClick={() => sendMessage(q)}
+                    style={{ lineHeight: 1.3, padding: "8px 10px" }}
                   >
                     {q}
                   </Button>
@@ -136,55 +155,31 @@ export default function ChatPanel() {
 
         {messages.map((msg, i) => (
           <div key={i} className={`mb-3 ${msg.role === "user" ? "text-end" : ""} fade-in`}>
-            <Card
-              className={`d-inline-block border-0 ${msg.role === "user" ? "chat-bubble-user" : "chat-bubble-assistant"}`}
-              style={{ maxWidth: "80%" }}
+            <div
+              className={`d-inline-block ${msg.role === "user" ? "chat-bubble-user" : "chat-bubble-assistant"}`}
+              style={{ maxWidth: "80%", padding: "10px 14px" }}
             >
-              <Card.Body className="py-2 px-3">
-                <div style={{ whiteSpace: "pre-wrap" }}>{msg.content}</div>
-                {msg.sources && msg.sources.length > 0 && (
-                  <div className="mt-2 pt-2 border-top border-secondary">
-                    <small className="text-secondary">Sources:</small>
-                    <div className="d-flex flex-wrap gap-1 mt-1">
-                      {msg.sources.map((s, j) => (
-                        <a key={j} href={s.url} target="_blank" rel="noopener noreferrer">
-                          <Badge bg="secondary" className="fw-normal">{s.source_name}</Badge>
-                        </a>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </Card.Body>
-            </Card>
+              <div style={{ whiteSpace: "pre-wrap", fontSize: "0.88rem", lineHeight: 1.6 }}>{msg.content}</div>
+              {renderSources(msg.sources)}
+            </div>
           </div>
         ))}
 
         {loading && streamingContent && (
           <div className="mb-3 fade-in">
-            <Card className="d-inline-block border-0 chat-bubble-assistant" style={{ maxWidth: "80%" }}>
-              <Card.Body className="py-2 px-3">
-                <div style={{ whiteSpace: "pre-wrap" }}>{streamingContent}<span className="pulse">|</span></div>
-                {streamingSources && streamingSources.length > 0 && (
-                  <div className="mt-2 pt-2 border-top border-secondary">
-                    <small className="text-secondary">Sources:</small>
-                    <div className="d-flex flex-wrap gap-1 mt-1">
-                      {streamingSources.map((s, j) => (
-                        <a key={j} href={s.url} target="_blank" rel="noopener noreferrer">
-                          <Badge bg="secondary" className="fw-normal">{s.source_name}</Badge>
-                        </a>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </Card.Body>
-            </Card>
+            <div className="d-inline-block chat-bubble-assistant" style={{ maxWidth: "80%", padding: "10px 14px" }}>
+              <div style={{ whiteSpace: "pre-wrap", fontSize: "0.88rem", lineHeight: 1.6 }}>
+                {streamingContent}<span className="pulse" style={{ color: "#e57373" }}>|</span>
+              </div>
+              {renderSources(streamingSources)}
+            </div>
           </div>
         )}
 
         {loading && !streamingContent && (
-          <div className="mb-3 fade-in">
-            <Spinner animation="border" size="sm" variant="danger" />
-            <small className="text-secondary ms-2">Searching intelligence sources...</small>
+          <div className="mb-3 fade-in d-flex align-items-center gap-2">
+            <Spinner animation="border" size="sm" style={{ color: "#e57373", width: 14, height: 14 }} />
+            <small style={{ color: "#484f58", fontSize: "0.78rem" }}>Analyzing with intelligence agents...</small>
           </div>
         )}
         <div ref={messagesEndRef} />
@@ -198,7 +193,7 @@ export default function ChatPanel() {
           className="bg-dark"
           disabled={loading}
         />
-        <Button type="submit" variant="danger" disabled={loading || !input.trim()}>
+        <Button type="submit" variant="danger" disabled={loading || !input.trim()} style={{ padding: "6px 20px" }}>
           Send
         </Button>
       </Form>

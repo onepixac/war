@@ -9,7 +9,7 @@ export const searchNewsTool = tool({
   description: "Search for news articles related to a topic using semantic vector search. Returns the most relevant articles from the database.",
   parameters: z.object({
     query: z.string().describe("The search query about a conflict, event, or geopolitical topic"),
-    limit: z.number().optional().default(8).describe("Maximum number of articles to return"),
+    limit: z.coerce.number().optional().default(8).describe("Maximum number of articles to return"),
   }),
   execute: async ({ query, limit }) => {
     const articles = await searchArticles(query, limit);
@@ -25,7 +25,7 @@ export const getRecentNewsTool = tool({
   description: "Get the most recent news articles, optionally filtered by region. Use this to see what's happening right now.",
   parameters: z.object({
     region: z.string().optional().describe("Filter by region: iran, russia, israel, gulf, middle_east, china, turkey, south_asia, western"),
-    limit: z.number().optional().default(15).describe("Maximum number of articles to return"),
+    limit: z.coerce.number().optional().default(15).describe("Maximum number of articles to return"),
   }),
   execute: async ({ region, limit }) => {
     const articles = await getRecentArticles(limit, region);
@@ -40,7 +40,7 @@ export const getAttacksTool = tool({
   name: "get_attacks",
   description: "Get recent military/security incidents and attacks with their locations, severity, and types. Useful for answering questions about ongoing conflicts.",
   parameters: z.object({
-    hours: z.number().optional().default(168).describe("How many hours back to look (default: 168 = 7 days)"),
+    hours: z.coerce.number().optional().default(168).describe("How many hours back to look (default: 168 = 7 days)"),
   }),
   execute: async ({ hours }) => {
     const attacks = await getAttacks(hours);

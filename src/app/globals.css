@@ -35,100 +35,216 @@ html, body {
 
 .nav-pills .nav-link.active {
   color: #fff !important;
-  background: #dc3545 !important;
-  box-shadow: 0 2px 8px rgba(220,53,69,0.3);
+  background: rgba(220,53,69,0.85) !important;
+  box-shadow: 0 2px 8px rgba(220,53,69,0.25);
 }
 
 /* Cards */
 .card {
-  border-radius: 10px !important;
-  transition: border-color 0.2s, transform 0.15s;
+  border-radius: 12px !important;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  border: 1px solid rgba(255,255,255,0.06) !important;
 }
 
 .card:hover {
-  border-color: rgba(255,255,255,0.12) !important;
+  border-color: rgba(255,255,255,0.1) !important;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.3);
 }
 
 /* Chat bubbles */
 .chat-bubble-user {
-  background: #dc3545 !important;
+  background: linear-gradient(135deg, #e8485c, #d63348) !important;
   color: #fff !important;
-  border-radius: 16px 16px 4px 16px !important;
+  border-radius: 18px 18px 4px 18px !important;
+  border: none !important;
 }
 
 .chat-bubble-assistant {
   background: #161b22 !important;
   color: #e1e4e8 !important;
-  border-radius: 16px 16px 16px 4px !important;
+  border-radius: 18px 18px 18px 4px !important;
   border: 1px solid rgba(255,255,255,0.06) !important;
 }
 
 /* Form controls */
-.form-control.bg-dark {
+.form-control.bg-dark,
+.form-control.war-input {
   background: #161b22 !important;
-  border-color: rgba(255,255,255,0.1) !important;
+  border-color: rgba(255,255,255,0.08) !important;
   color: #e1e4e8 !important;
-  border-radius: 8px !important;
+  border-radius: 10px !important;
 }
 
-.form-control.bg-dark:focus {
-  border-color: #dc3545 !important;
-  box-shadow: 0 0 0 0.2rem rgba(220,53,69,0.15) !important;
+.form-control.bg-dark:focus,
+.form-control.war-input:focus {
+  border-color: rgba(220,53,69,0.5) !important;
+  box-shadow: 0 0 0 0.2rem rgba(220,53,69,0.1) !important;
 }
 
-.form-control.bg-dark::placeholder {
+.form-control.bg-dark::placeholder,
+.form-control.war-input::placeholder {
   color: #484f58 !important;
 }
 
 .form-select.bg-dark {
   background-color: #161b22 !important;
-  border-color: rgba(255,255,255,0.1) !important;
+  border-color: rgba(255,255,255,0.08) !important;
   color: #e1e4e8 !important;
-  border-radius: 8px !important;
+  border-radius: 10px !important;
 }
 
-/* Buttons */
-.btn-danger {
-  background: #dc3545 !important;
-  border: none !important;
-  border-radius: 8px !important;
-}
-
+/* Override all blue buttons — project uses red accent only */
 .btn-primary {
-  background: #dc3545 !important;
+  background: rgba(220,53,69,0.85) !important;
   border: none !important;
-  border-radius: 8px !important;
+  border-radius: 10px !important;
+  color: #fff !important;
 }
 
-.btn-primary:hover, .btn-danger:hover {
-  background: #c82333 !important;
+.btn-primary:hover {
+  background: rgba(220,53,69,1) !important;
+}
+
+.btn-danger {
+  background: rgba(220,53,69,0.85) !important;
+  border: none !important;
+  border-radius: 10px !important;
+}
+
+.btn-danger:hover {
+  background: rgba(220,53,69,1) !important;
+}
+
+.btn-warning {
+  background: rgba(255,183,77,0.15) !important;
+  border: 1px solid rgba(255,183,77,0.3) !important;
+  color: #ffb74d !important;
+  border-radius: 10px !important;
+}
+
+.btn-warning:hover {
+  background: rgba(255,183,77,0.25) !important;
+}
+
+.btn-info {
+  background: rgba(128,203,196,0.15) !important;
+  border: 1px solid rgba(128,203,196,0.3) !important;
+  color: #80cbc4 !important;
+  border-radius: 10px !important;
+}
+
+.btn-info:hover {
+  background: rgba(128,203,196,0.25) !important;
 }
 
 .btn-outline-secondary {
-  border-color: rgba(255,255,255,0.1) !important;
+  border-color: rgba(255,255,255,0.08) !important;
   color: #8b949e !important;
-  border-radius: 8px !important;
+  border-radius: 10px !important;
   font-size: 0.8rem !important;
+  transition: all 0.15s ease !important;
 }
 
 .btn-outline-secondary:hover {
-  background: rgba(255,255,255,0.05) !important;
-  border-color: rgba(255,255,255,0.15) !important;
+  background: rgba(255,255,255,0.04) !important;
+  border-color: rgba(255,255,255,0.12) !important;
   color: #c9d1d9 !important;
+}
+
+/* Pastel badges */
+.badge-pastel-green {
+  background: rgba(129,199,132,0.15) !important;
+  color: #81c784 !important;
+  border: 1px solid rgba(129,199,132,0.2);
+}
+
+.badge-pastel-yellow {
+  background: rgba(255,213,79,0.15) !important;
+  color: #ffd54f !important;
+  border: 1px solid rgba(255,213,79,0.2);
+}
+
+.badge-pastel-orange {
+  background: rgba(255,183,77,0.15) !important;
+  color: #ffb74d !important;
+  border: 1px solid rgba(255,183,77,0.2);
+}
+
+.badge-pastel-red {
+  background: rgba(229,115,115,0.15) !important;
+  color: #e57373 !important;
+  border: 1px solid rgba(229,115,115,0.2);
+}
+
+.badge-pastel-purple {
+  background: rgba(186,104,200,0.15) !important;
+  color: #ba68c8 !important;
+  border: 1px solid rgba(186,104,200,0.2);
+}
+
+.badge-pastel-teal {
+  background: rgba(128,203,196,0.15) !important;
+  color: #80cbc4 !important;
+  border: 1px solid rgba(128,203,196,0.2);
+}
+
+.badge-pastel-pink {
+  background: rgba(240,98,146,0.15) !important;
+  color: #f06292 !important;
+  border: 1px solid rgba(240,98,146,0.2);
+}
+
+.badge-pastel-muted {
+  background: rgba(255,255,255,0.06) !important;
+  color: #8b949e !important;
+  border: 1px solid rgba(255,255,255,0.06);
+}
+
+/* News card styles */
+.news-card {
+  background: #111318 !important;
+  border: 1px solid rgba(255,255,255,0.04) !important;
+  border-radius: 12px !important;
+  transition: all 0.2s ease;
+}
+
+.news-card:hover {
+  background: #161b22 !important;
+  border-color: rgba(255,255,255,0.08) !important;
+  transform: translateY(-1px);
+}
+
+.news-card .news-title {
+  color: #e1e4e8;
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 0.88rem;
+  line-height: 1.4;
+  transition: color 0.15s;
+}
+
+.news-card .news-title:hover {
+  color: #fff;
+}
+
+.news-card .news-meta {
+  color: #484f58;
+  font-size: 0.72rem;
 }
 
 /* Badges */
 .badge {
   font-weight: 500;
   letter-spacing: 0.3px;
+  border-radius: 6px !important;
 }
 
 /* Leaflet dark mode */
 .leaflet-popup-content-wrapper {
   background: #161b22;
   color: #e1e4e8;
-  border-radius: 10px;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.5);
   border: 1px solid rgba(255,255,255,0.06);
 }
 
@@ -175,12 +291,12 @@ html, body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.08);
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255,255,255,0.2);
+  background: rgba(255,255,255,0.15);
 }
 
 /* Animations */
@@ -190,7 +306,7 @@ html, body {
 }
 
 .fade-in {
-  animation: fadeIn 0.3s ease;
+  animation: fadeIn 0.3s ease forwards;
 }
 
 @keyframes pulse {
@@ -200,4 +316,29 @@ html, body {
 
 .pulse {
   animation: pulse 1s infinite;
+}
+
+/* Progress bar override */
+.progress {
+  background: rgba(255,255,255,0.06) !important;
+  border-radius: 4px !important;
+}
+
+/* Section headers */
+.section-header {
+  color: #c9d1d9;
+  font-weight: 600;
+  font-size: 1rem;
+  letter-spacing: 0.3px;
+}
+
+/* Empty state */
+.empty-state {
+  color: #484f58;
+  padding: 3rem 1rem;
+  text-align: center;
+}
+
+.empty-state p {
+  margin-bottom: 0.25rem;
 }

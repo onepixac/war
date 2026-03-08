@@ -39,26 +39,10 @@ export default function BiasAnalyzer() {
     setLoading(true);
 
     try {
-      const newsRes = await fetch(`/api/news?limit=20`);
-      const newsData = await newsRes.json();
-      const articles = (newsData.articles || []).slice(0, 10).map((a: Record<string, unknown>) => ({
-        id: a.id,
-        title: a.title,
-        summary: a.summary,
-        source_name: a.source_name || "Unknown",
-        source_category: a.source_category || "unknown",
-        region: a.region || "unknown",
-      }));
-
-      if (articles.length < 2) {
-        alert("Not enough articles found for bias analysis. Need at least 2 sources.");
-        return;
-      }
-
       const res = await fetch("/api/bias", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ eventTopic: topic.trim(), articles }),
+        body: JSON.stringify({ eventTopic: topic.trim() }),
       });
 
       const data = await res.json();
@@ -72,15 +56,27 @@ export default function BiasAnalyzer() {
     }
   };
 
-  const getBiasColor = (score: number) => {
+  const getBiasClass = (score: number) => {
+    if (score >= 0.5) return "badge-pastel-green";
+    if (score >= 0) return "badge-pastel-yellow";
+    return "badge-pastel-red";
+  };
+
+  const getBiasVariant = (score: number) => {
     if (score >= 0.5) return "success";
     if (score >= 0) return "warning";
     return "danger";
   };
 
+  const getPropagandaClass = (idx: number) => {
+    if (idx > 60) return "badge-pastel-red";
+    if (idx > 30) return "badge-pastel-yellow";
+    return "badge-pastel-green";
+  };
+
   return (
-    <div style={{ maxWidth: 960, margin: "0 auto" }}>
-      <h5 className="text-light fw-bold mb-3">Bias Analysis</h5>
+    <div style={{ maxWidth: 900, margin: "0 auto" }}>
+      <h6 className="section-header mb-3">Bias Analysis</h6>
 
       <Form onSubmit={analyze} className="d-flex gap-2 mb-4">
         <Form.Control
@@ -90,65 +86,61 @@ export default function BiasAnalyzer() {
           className="bg-dark"
           disabled={loading}
         />
-        <Button type="submit" variant="warning" disabled={loading || !topic.trim()} className="px-4">
+        <Button type="submit" variant="warning" disabled={loading || !topic.trim()} style={{ padding: "6px 24px" }}>
           {loading ? <Spinner animation="border" size="sm" /> : "Analyze"}
         </Button>
       </Form>
 
       {results.length === 0 && !loading && (
-        <Card bg="dark" className="border-secondary text-center py-5">
-          <Card.Body>
-            <p className="text-secondary mb-1">Enter a topic to compare how different sources cover it.</p>
-            <small className="text-secondary">The system will analyze narrative framing and propaganda indicators.</small>
-          </Card.Body>
-        </Card>
+        <div className="empty-state">
+          <p style={{ fontSize: "0.85rem" }}>Enter a topic to compare how different sources cover it.</p>
+          <small>The agent will analyze narrative framing and propaganda indicators.</small>
+        </div>
       )}
 
       {results.map((result, i) => (
-        <Card key={i} bg="dark" text="light" className="border-secondary mb-3 fade-in">
-          <Card.Header className="d-flex justify-content-between align-items-center border-secondary">
-            <strong>{result.event_topic}</strong>
+        <Card key={i} className="mb-3 fade-in" style={{ background: "#111318", border: "1px solid rgba(255,255,255,0.06)" }}>
+          <Card.Header className="d-flex justify-content-between align-items-center" style={{ background: "transparent", borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
+            <strong className="text-light" style={{ fontSize: "0.9rem" }}>{result.event_topic}</strong>
             <div className="d-flex align-items-center gap-2">
-              <small className="text-secondary">Propaganda Index:</small>
-              <Badge bg={result.propaganda_index > 60 ? "danger" : result.propaganda_index > 30 ? "warning" : "success"}>
+              <small style={{ color: "#484f58", fontSize: "0.72rem" }}>Propaganda:</small>
+              <Badge className={getPropagandaClass(result.propaganda_index)} style={{ fontSize: "0.72rem" }}>
                 {result.propaganda_index}/100
               </Badge>
             </div>
           </Card.Header>
           <Card.Body>
-            <p className="text-secondary mb-3">{result.overall_assessment}</p>
+            <p style={{ color: "#8b949e", fontSize: "0.82rem", marginBottom: "1rem" }}>{result.overall_assessment}</p>
 
             <Row className="g-2">
               {result.sources?.map((source, j) => (
                 <Col key={j} md={6}>
-                  <Card className="border-secondary h-100" style={{ background: "#111318" }}>
-                    <Card.Body className="py-2 px-3">
-                      <div className="d-flex justify-content-between align-items-center mb-2">
-                        <strong className="text-light">{source.name}</strong>
-                        <Badge bg={getBiasColor(source.bias_score)}>
-                          {source.bias_score > 0 ? "+" : ""}{source.bias_score.toFixed(1)}
-                        </Badge>
+                  <div style={{ background: "#0d0f13", borderRadius: 10, padding: "12px", border: "1px solid rgba(255,255,255,0.04)" }}>
+                    <div className="d-flex justify-content-between align-items-center mb-2">
+                      <strong className="text-light" style={{ fontSize: "0.82rem" }}>{source.name}</strong>
+                      <Badge className={getBiasClass(source.bias_score)} style={{ fontSize: "0.7rem" }}>
+                        {source.bias_score > 0 ? "+" : ""}{source.bias_score.toFixed(1)}
+                      </Badge>
+                    </div>
+                    <ProgressBar
+                      now={(source.bias_score + 1) * 50}
+                      variant={getBiasVariant(source.bias_score)}
+                      className="mb-2"
+                      style={{ height: 3 }}
+                    />
+                    <small style={{ color: "#6c757d", fontSize: "0.75rem" }}>
+                      {source.narrative_framing}
+                    </small>
+                    {source.propaganda_indicators?.length > 0 && (
+                      <div className="d-flex flex-wrap gap-1 mt-2">
+                        {source.propaganda_indicators.map((ind, k) => (
+                          <Badge key={k} className="badge-pastel-muted" style={{ fontSize: "0.65rem", fontWeight: 400 }}>
+                            {ind}
+                          </Badge>
+                        ))}
                       </div>
-                      <ProgressBar
-                        now={(source.bias_score + 1) * 50}
-                        variant={getBiasColor(source.bias_score)}
-                        className="mb-2"
-                        style={{ height: 4 }}
-                      />
-                      <small className="text-secondary d-block mb-1">
-                        {source.narrative_framing}
-                      </small>
-                      {source.propaganda_indicators?.length > 0 && (
-                        <div className="d-flex flex-wrap gap-1 mt-1">
-                          {source.propaganda_indicators.map((ind, k) => (
-                            <Badge key={k} bg="dark" className="border border-secondary fw-normal" style={{ fontSize: "0.7rem" }}>
-                              {ind}
-                            </Badge>
-                          ))}
-                        </div>
-                      )}
-                    </Card.Body>
-                  </Card>
+                    )}
+                  </div>
                 </Col>
               ))}
             </Row>

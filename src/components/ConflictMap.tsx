@@ -17,11 +17,11 @@ interface Attack {
 }
 
 const SEVERITY_COLORS: Record<string, string> = {
-  LOW: "#28a745",
-  MEDIUM: "#ffc107",
-  HIGH: "#fd7e14",
-  CRITICAL: "#dc3545",
-  MAJOR: "#6f42c1",
+  LOW: "#81c784",
+  MEDIUM: "#ffd54f",
+  HIGH: "#ffb74d",
+  CRITICAL: "#e57373",
+  MAJOR: "#ba68c8",
 };
 
 function getSeverityColor(severity: string): string {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Card, Badge, Spinner, Form, Row, Col } from "react-bootstrap";
+import { Badge, Spinner, Form, Row, Col } from "react-bootstrap";
 
 interface Article {
   id: number;
@@ -19,13 +19,36 @@ const REGIONS = [
   "proxy", "china", "turkey", "south_asia", "western",
 ];
 
-const CATEGORY_COLORS: Record<string, string> = {
-  state: "danger",
-  "state-aligned": "warning",
-  proxy: "dark",
-  independent: "info",
-  unknown: "secondary",
+const CATEGORY_BADGE: Record<string, string> = {
+  state: "badge-pastel-red",
+  "state-aligned": "badge-pastel-orange",
+  proxy: "badge-pastel-purple",
+  independent: "badge-pastel-teal",
+  unknown: "badge-pastel-muted",
 };
+
+const REGION_BADGE: Record<string, string> = {
+  iran: "badge-pastel-orange",
+  russia: "badge-pastel-red",
+  israel: "badge-pastel-teal",
+  gulf: "badge-pastel-yellow",
+  middle_east: "badge-pastel-orange",
+  china: "badge-pastel-red",
+  turkey: "badge-pastel-orange",
+  south_asia: "badge-pastel-green",
+  western: "badge-pastel-teal",
+  proxy: "badge-pastel-purple",
+};
+
+function timeAgo(dateStr: string): string {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  const days = Math.floor(hrs / 24);
+  return `${days}d ago`;
+}
 
 export default function NewsFeed() {
   const [articles, setArticles] = useState<Article[]>([]);
@@ -45,18 +68,18 @@ export default function NewsFeed() {
   }, [region]);
 
   return (
-    <div style={{ maxWidth: 960, margin: "0 auto" }}>
+    <div style={{ maxWidth: 800, margin: "0 auto" }}>
       <Row className="mb-3 align-items-center">
-        <Col xs="auto">
-          <h5 className="text-light fw-bold mb-0">News Feed</h5>
+        <Col>
+          <h6 className="section-header mb-0">News Feed</h6>
         </Col>
-        <Col xs="auto" className="ms-auto">
+        <Col xs="auto">
           <Form.Select
             value={region}
             onChange={(e) => setRegion(e.target.value)}
             className="bg-dark"
             size="sm"
-            style={{ width: "auto" }}
+            style={{ width: "auto", fontSize: "0.8rem" }}
           >
             {REGIONS.map((r) => (
               <option key={r} value={r}>
@@ -69,55 +92,58 @@ export default function NewsFeed() {
 
       {loading ? (
         <div className="text-center py-5">
-          <Spinner animation="border" variant="danger" />
+          <Spinner animation="border" size="sm" variant="secondary" />
         </div>
       ) : articles.length === 0 ? (
-        <Card bg="dark" className="border-secondary text-center py-5">
-          <Card.Body>
-            <p className="text-secondary mb-0">No articles found. Run the news pipeline to populate data.</p>
-          </Card.Body>
-        </Card>
+        <div className="empty-state">
+          <p>No articles found.</p>
+          <small>Run the news pipeline to populate data.</small>
+        </div>
       ) : (
-        <div className="d-flex flex-column gap-2">
+        <div className="d-flex flex-column gap-1">
           {articles.map((article, i) => (
-            <Card key={article.id} bg="dark" text="light" className="border-secondary fade-in" style={{ animationDelay: `${i * 0.02}s` }}>
-              <Card.Body className="py-2 px-3">
-                <div className="d-flex justify-content-between align-items-start gap-3">
-                  <div className="flex-grow-1 min-w-0">
-                    <a
-                      href={article.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-light text-decoration-none fw-semibold d-block text-truncate"
-                      style={{ fontSize: "0.9rem" }}
-                    >
-                      {article.title}
-                    </a>
-                    {article.summary && (
-                      <p className="text-secondary small mb-0 mt-1" style={{
-                        display: "-webkit-box",
-                        WebkitLineClamp: 2,
-                        WebkitBoxOrient: "vertical",
-                        overflow: "hidden"
-                      }}>
-                        {article.summary}
-                      </p>
-                    )}
-                    <div className="mt-1 d-flex align-items-center gap-2">
-                      <small className="text-secondary">
-                        {article.published_at && new Date(article.published_at).toLocaleString()}
-                      </small>
-                      <small className="text-secondary">
-                        {article.region?.replace(/_/g, " ")}
-                      </small>
-                    </div>
+            <div
+              key={article.id}
+              className="news-card p-3 fade-in"
+              style={{ animationDelay: `${Math.min(i * 0.02, 0.5)}s` }}
+            >
+              <div className="d-flex gap-3 align-items-start">
+                <div className="flex-grow-1 min-w-0">
+                  <a
+                    href={article.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="news-title d-block"
+                  >
+                    {article.title}
+                  </a>
+                  {article.summary && (
+                    <p className="mb-0 mt-1" style={{
+                      color: "#6c757d",
+                      fontSize: "0.78rem",
+                      lineHeight: 1.5,
+                      display: "-webkit-box",
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: "vertical",
+                      overflow: "hidden",
+                    }}>
+                      {article.summary}
+                    </p>
+                  )}
+                  <div className="mt-2 d-flex align-items-center gap-2 flex-wrap">
+                    <Badge className={CATEGORY_BADGE[article.source_category] || "badge-pastel-muted"} style={{ fontSize: "0.68rem" }}>
+                      {article.source_name || "Unknown"}
+                    </Badge>
+                    <Badge className={REGION_BADGE[article.region] || "badge-pastel-muted"} style={{ fontSize: "0.68rem" }}>
+                      {article.region?.replace(/_/g, " ")}
+                    </Badge>
+                    <span className="news-meta">
+                      {article.published_at && timeAgo(article.published_at)}
+                    </span>
                   </div>
-                  <Badge bg={CATEGORY_COLORS[article.source_category] || "secondary"} className="flex-shrink-0">
-                    {article.source_name || "Unknown"}
-                  </Badge>
                 </div>
-              </Card.Body>
-            </Card>
+              </div>
+            </div>
           ))}
         </div>
       )}
