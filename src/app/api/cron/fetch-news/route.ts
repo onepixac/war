@@ -132,7 +132,7 @@ Return JSON:
              RETURNING id`,
             [source.id, title, source.language !== "en" ? item.title : null,
              item.description || null, summary, item.link, source.language,
-             source.region, item.pubDate || new Date().toISOString(), vectorToSql(embedding)]
+             source.region, parseDate(item.pubDate), vectorToSql(embedding)]
           );
           const articleId = rows[0].id;
           processed++;
@@ -178,6 +178,16 @@ Return JSON:
     console.error("Cron fetch error:", error);
     return NextResponse.json({ error: "Pipeline failed" }, { status: 500 });
   }
+}
+
+function parseDate(dateStr: string): string {
+  if (!dateStr) return new Date().toISOString();
+  try {
+    const d = new Date(dateStr);
+    if (!isNaN(d.getTime())) return d.toISOString();
+  } catch { /* not a standard date */ }
+  // Fallback: use current time for non-parseable dates (Arabic, Persian, etc.)
+  return new Date().toISOString();
 }
 
 function parseRSSItems(xml: string): { title: string; link: string; description: string; pubDate: string }[] {
